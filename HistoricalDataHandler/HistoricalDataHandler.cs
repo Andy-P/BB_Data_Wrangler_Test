@@ -15,8 +15,8 @@ namespace DataWrangler
         public bool dsConnected = false;
 
         // cached historical data
-        SortedDictionary<DateTime, Dictionary<Security, List<TickData>>> rawTickData 
-            = new SortedDictionary<DateTime, Dictionary<Security, List<TickData>>>();
+        SortedDictionary<DateTime, Dictionary<DataFactory, List<TickData>>> rawTickData
+            = new SortedDictionary<DateTime, Dictionary<DataFactory, List<TickData>>>();
 
         private string dsPath = "TickData.qbd";
 
@@ -76,54 +76,77 @@ namespace DataWrangler
                 foreach (var sec in securities)
                 {
                     DataTable data = histDS.getTickDataSeries(sec.Key, interval.start, interval.end);
-                    ParseDataTable(sec.Value, data);
-                }
-                
+                    if (data.Rows.Count > 0) ParseDataTable(sec.Value, data);
+                }                
             }
         }
 
         private void ParseDataTable(DataFactory factory, DataTable dt)
         {
-            foreach (DataRow r in dt.Rows)
+            foreach (DataRow row in dt.Rows)
             {
-                Type type;
-                DateTime timeStamp;
-                Double price;
-                uint size;
-                Dictionary<string, string> codes = null;
-                if (Enum.TryParse(r[0].ToString(), out type))
-                    if (DateTime.TryParse(r[1].ToString(), out timeStamp))
-                        if (Double.TryParse(r[2].ToString(), out price))
-                            if (uint.TryParse(r[3].ToString(), out size))
-                            {
-                                if ((r[4].ToString() != String.Empty) || (r[5].ToString() != String.Empty))
-                                {
-                                    codes = getCodes(r[4].ToString(), r[5].ToString(), type);
-                                }
-
-                                TickData tick = new TickData()
-                                {
-                                    Type = type,
-                                    TimeStamp = timeStamp,
-                                    Price = price,
-                                    Size = size,
-                                    Codes = codes,
-                                    Security = factory.SecurityObj.Name,
-                                    SecurityObj = factory.SecurityObj,
-                                    SecurityID = factory.SecurityObj.Id
-                                };
-
-                                addHistDataToCache(factory, tick);
-                            }
+                TickData tick = dataRowToTickData(factory, row);
+                if( tick != null) addHistDataToCache(factory, tick);                            
             }
+        }
+
+        private TickData dataRowToTickData(DataFactory factory, DataRow row)
+        {
+            Type type;
+            DateTime timeStamp;
+            Double price;
+            uint size;
+            Dictionary<string, string> codes = null;
+            TickData tick = null;
+
+            // try parse dataRow for tick data values
+            if (Enum.TryParse(row[0].ToString(), out type))
+                if (DateTime.TryParse(row[1].ToString(), out timeStamp))
+                    if (Double.TryParse(row[2].ToString(), out price))
+                        if (uint.TryParse(row[3].ToString(), out size))
+                        {
+                            // if there are any codes, add to the tickData event
+                            if ((row[4].ToString() != String.Empty) || (row[5].ToString() != String.Empty))
+                            {
+                                codes = getCodes(row[4].ToString(), row[5].ToString(), type);
+                            }
+
+                            // create a new tick data event
+                            tick = new TickData()
+                            {
+                                Type = type,
+                                TimeStamp = timeStamp,
+                                Price = price,
+                                Size = size,
+                                Codes = codes,
+                                Security = factory.SecurityObj.Name,
+                                SecurityObj = factory.SecurityObj,
+                                SecurityID = factory.SecurityObj.Id
+                            };
+
+                        }
+
+            return tick;
         }
 
         private void addHistDataToCache(DataFactory factory, TickData tick)
         {
+            if (!rawTickData.ContainsKey(tick.TimeStamp))
+                rawTickData.Add(tick.TimeStamp, new Dictionary<DataFactory, List<TickData>>());
 
+            Dictionary<DataFactory, List<TickData>> TimeInterval = rawTickData[tick.TimeStamp];
 
+            if (!TimeInterval.ContainsKey(factory))
+                TimeInterval.Add(factory, new List<TickData>());
+            List<TickData> tickData = TimeInterval[factory];
+
+            tickData.Add(tick);
+
+            //rawTickData.Add(
+            //   tick.TimeStamp,
+            //   new Dictionary<DataFactory, List<TickData>>() { { factory, new List<TickData>() { tick } } });
         }
-
+        
         private Dictionary<string, string> getCodes(string condCode, string exchCode, Type type)
         {
             Dictionary<string, string> codes = new Dictionary<string, string>();

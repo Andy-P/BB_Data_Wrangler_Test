@@ -29,9 +29,15 @@ namespace BarFactoryBloombergTest
             histFeed = new HistoricalDataHandler(dsPath);
             histFeed.AddDataIntervals(new DateTime(2013, 3, 7, 0, 0, 0), new DateTime(2013, 3, 7, 6, 15, 0));
 
-            DataFactory NKH3 = new DataFactory(new Security("NOH3 Index", 12, Security.SecurityType.IndexFuture));
+            DataFactory NKH3 = new DataFactory(new Security("NKH3 Index", 12, Security.SecurityType.IndexFuture));
             histFeed.AddSecurity(NKH3);
+            //histFeed.LoadHistoricalData();
+
+
+            DataFactory NOH3 = new DataFactory(new Security("NOH3 Index", 17, Security.SecurityType.IndexFuture));
+            histFeed.AddSecurity(NOH3);
             histFeed.LoadHistoricalData();
+
 
             MarketAggregator Markets = new MarketAggregator();
 
