@@ -31,7 +31,7 @@ namespace BarFactoryBloombergTest
 
             DataFactory NKH3 = new DataFactory(new Security("NOH3 Index", 12, Security.SecurityType.IndexFuture));
             histFeed.AddSecurity(NKH3);
-            histFeed.getData();
+            histFeed.LoadHistoricalData();
 
             MarketAggregator Markets = new MarketAggregator();
 

@@ -20,7 +20,7 @@ namespace DataWrangler
 
         private string dsPath = "TickData.qbd";
 
-        private Dictionary<string, object> securities = new Dictionary<string, object>();
+        private Dictionary<string, DataFactory> securities = new Dictionary<string, DataFactory>();
         private List<DataInterval> Intervals = new List<DataInterval>();
 
         public HistoricalDataHandler(string dsPath)
@@ -39,7 +39,7 @@ namespace DataWrangler
             Console.WriteLine(" ");
         }
 
-        public void AddSecurity(string security, object dataFactoryObject)
+        public void AddSecurity(string security, DataFactory dataFactoryObject)
         {
             if (security.Trim().Length > 0)
             {
@@ -64,17 +64,98 @@ namespace DataWrangler
             }
         }
 
-        public void getData()
+        public void LoadHistoricalData()
+        {
+            getData();
+        }
+
+        private void getData()
         {
             foreach (DataInterval interval in Intervals)
             {
                 foreach (var sec in securities)
                 {
                     DataTable data = histDS.getTickDataSeries(sec.Key, interval.start, interval.end);
-                    
+                    ParseDataTable(sec.Value, data);
                 }
                 
             }
+        }
+
+        private void ParseDataTable(DataFactory factory, DataTable dt)
+        {
+            foreach (DataRow r in dt.Rows)
+            {
+                Type type;
+                DateTime timeStamp;
+                Double price;
+                uint size;
+                Dictionary<string, string> codes = null;
+                if (Enum.TryParse(r[0].ToString(), out type))
+                    if (DateTime.TryParse(r[1].ToString(), out timeStamp))
+                        if (Double.TryParse(r[2].ToString(), out price))
+                            if (uint.TryParse(r[3].ToString(), out size))
+                            {
+                                if ((r[4].ToString() != String.Empty) || (r[5].ToString() != String.Empty))
+                                {
+                                    codes = getCodes(r[4].ToString(), r[5].ToString(), type);
+                                }
+
+                                TickData tick = new TickData()
+                                {
+                                    Type = type,
+                                    TimeStamp = timeStamp,
+                                    Price = price,
+                                    Size = size,
+                                    Codes = codes,
+                                    Security = factory.SecurityObj.Name,
+                                    SecurityObj = factory.SecurityObj,
+                                    SecurityID = factory.SecurityObj.Id
+                                };
+
+                                addHistDataToCache(factory, tick);
+                            }
+            }
+        }
+
+        private void addHistDataToCache(DataFactory factory, TickData tick)
+        {
+
+
+        }
+
+        private Dictionary<string, string> getCodes(string condCode, string exchCode, Type type)
+        {
+            Dictionary<string, string> codes = new Dictionary<string, string>();
+
+            if (exchCode != String.Empty)
+            {
+                switch (type)
+                {
+                    case Type.Ask:
+                        codes.Add("EXCH_CODE_LAST", exchCode);
+                        break;
+                    case Type.Bid:
+                        codes.Add("EXCH_CODE_BID", exchCode);
+                        break;
+                    case Type.Trade:
+                        codes.Add("EXCH_CODE_ASK", exchCode);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                if (condCode != String.Empty)
+                {
+                    codes.Add("COND_CODE", condCode);
+                }
+            }
+
+            if (codes.Count == 0) codes = null;
+
+            return codes;
         }
 
         public struct DataInterval
