@@ -67,6 +67,9 @@
     <Reference Include="DataFactory">
       <HintPath>..\DataFactory\bin\Debug\DataFactory.dll</HintPath>
     </Reference>
+    <Reference Include="HistoricalDataHandler">
+      <HintPath>..\HistoricalDataHandler\bin\Debug\HistoricalDataHandler.dll</HintPath>
+    </Reference>
     <Reference Include="MarketAggregator">
       <HintPath>..\MarketAggregator\bin\Debug\MarketAggregator.dll</HintPath>
     </Reference>

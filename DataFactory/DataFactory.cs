@@ -117,7 +117,7 @@ namespace DataWrangler
         public void FirstTick(TickData Bid, TickData Ask, TickData Trade)
         {
             Console.WriteLine("Summary for " + securityObj.Name);
-            DateTime timeBin = Bid.TimeStamp;
+            DateTime timeBin = Bid.TimeStamp; // no timestamp
             if (!mktInitialized)
             {
                 mktInitialized = true;
