@@ -27,15 +27,26 @@ namespace BarFactoryBloombergTest
         {
             string dsPath = "TickData.qbd";
             histFeed = new HistoricalDataHandler(dsPath);
-            histFeed.AddDataIntervals(new DateTime(2013, 3, 7, 0, 0, 0), new DateTime(2013, 3, 7, 6, 15, 0));
+            histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 0), new DateTime(2013, 3, 7, 6, 15, 0));
 
             DataFactory NKH3 = new DataFactory(new Security("NKH3 Index", 12, Security.SecurityType.IndexFuture));
             histFeed.AddSecurity(NKH3);
-            //histFeed.LoadHistoricalData();
-
 
             DataFactory NOH3 = new DataFactory(new Security("NOH3 Index", 17, Security.SecurityType.IndexFuture));
             histFeed.AddSecurity(NOH3);
+
+            DataFactory NIH3 = new DataFactory(new Security("NIH3 Index", 21, Security.SecurityType.IndexFuture));
+            histFeed.AddSecurity(NIH3);
+
+            DataFactory TPH3 = new DataFactory(new Security("TPH3 Index", 26, Security.SecurityType.IndexFuture));
+            histFeed.AddSecurity(TPH3);
+
+            DataFactory JBH3 = new DataFactory(new Security("JBH3 Comdty", 31, Security.SecurityType.IndexFuture));
+            histFeed.AddSecurity(JBH3);
+            
+            DataFactory JPY = new DataFactory(new Security("JPY Curncy", 9, Security.SecurityType.IndexFuture));
+            histFeed.AddSecurity(JPY);
+
             histFeed.LoadHistoricalData();
 
 
@@ -55,21 +66,21 @@ namespace BarFactoryBloombergTest
             //NOM3.AddReferenceToMarkets(Markets);
             //NOM3.LogEachTick = true;
 
-            //DataFactory JPY = new DataFactory(new Security("USDJPY CURNCY", 9, Security.SecurityType.Curncy));
+            //DataFactory JPY = new DataFactory(new Security("JPY Curncy", 9, Security.SecurityType.Curncy));
             //Markets.AddSecurity(JPY);
             //blbgFeed.AddSecurity(JPY.Security, JPY);
             //JPY.SubscribeToDataFeedEvents(blbgFeed);
             //JPY.AddReferenceToMarkets(Markets);
             //JPY.LogEachTick = true;
 
-            //DataFactory NIM3 = new DataFactory(new Security("NIM3 Index", 18, Security.SecurityType.IndexFuture));
+            //DataFactory NIM3 = new DataFactory(new Security("NIM3 Index", 22, Security.SecurityType.IndexFuture));
             //Markets.AddSecurity(NIM3);
             //blbgFeed.AddSecurity(NIM3);
             //NIM3.SubscribeToDataFeedEvents(blbgFeed);
             //NIM3.AddReferenceToMarkets(Markets);
             //NIM3.LogEachTick = true;
 
-            //DataFactory JBM3 = new DataFactory(new Security("JBM3 Comdty", 18, Security.SecurityType.IndexFuture));
+            //DataFactory JBM3 = new DataFactory(new Security("JBM3 Comdty", 32, Security.SecurityType.IndexFuture));
             //Markets.AddSecurity(JBM3);
             //blbgFeed.AddSecurity(JBM3);
             //JBM3.SubscribeToDataFeedEvents(blbgFeed);
