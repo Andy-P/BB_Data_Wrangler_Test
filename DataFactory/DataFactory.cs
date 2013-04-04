@@ -23,7 +23,7 @@ namespace DataWrangler
         public uint SecurityID { get { return securityID; } }
         public Security SecurityObj { get { return securityObj; } }
         public DateTime LastUpdate { get { return lastUpdate; } }
-        public DateTime CurrentIntervalDT { get { return currentIntervalDT; } }
+        public DateTime CurrentIntervalDt { get { return currentIntervalDT; } }
         public MarketState CurrentInterval { get { return getCurrentState(); } }
         public DataRow CurrentBarDataRow { get { return getCurrentBarAsDataRow(); } }
 
