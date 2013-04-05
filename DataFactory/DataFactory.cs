@@ -1,64 +1,60 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Data;
-using DataWrangler;
 using DataFeed = DataWrangler.BloombergRTDataProvider;
 
 namespace DataWrangler
 {
     public class DataFactory
     {
-        private string security = String.Empty;
-        private uint securityID = 0;
-        private Security securityObj = null;
-        private DateTime lastUpdate = DateTime.MinValue;
-        private DateTime currentIntervalDT;
-        private MarketAggregator markets;
+        private readonly string _security = String.Empty;
+        private readonly Security _securityObj;
+        private DateTime _lastUpdate = DateTime.MinValue;
+        private DateTime _currentIntervalDt;
+        private MarketAggregator _markets;
 
         // read only properties
-        public string Security { get { return security; } }
-        public uint SecurityID { get { return securityID; } }
-        public Security SecurityObj { get { return securityObj; } }
-        public DateTime LastUpdate { get { return lastUpdate; } }
-        public DateTime CurrentIntervalDt { get { return currentIntervalDT; } }
-        public MarketState CurrentInterval { get { return getCurrentState(); } }
-        public DataRow CurrentBarDataRow { get { return getCurrentBarAsDataRow(); } }
+        public string Security { get { return _security; } }
+        public uint SecurityId { get; private set; }
+        public Security SecurityObj { get { return _securityObj; } }
+        public DateTime LastUpdate { get { return _lastUpdate; } }
+        public DateTime CurrentIntervalDt { get { return _currentIntervalDt; } }
+        public MarketState CurrentInterval { get { return GetCurrentState(); } }
+        public DataRow CurrentBarDataRow { get { return GetCurrentBarAsDataRow(); } }
 
-        bool mktInitialized = false;
+        bool _mktInitialized;
 
         public bool LogEachTick = false;
 
         // index tracking latest value in time bin
-        private Dictionary<DateTime, uint> marketDataLastest = new Dictionary<DateTime, uint>();
+        private readonly Dictionary<DateTime, uint> _marketDataLastest = new Dictionary<DateTime, uint>();
 
         // Main data repository
-        private SortedDictionary<DateTime, SortedDictionary<uint, MarketState>> marketData
+        private readonly SortedDictionary<DateTime, SortedDictionary<uint, MarketState>> _marketData
             = new SortedDictionary<DateTime, SortedDictionary<uint, MarketState>>();
 
         // read only access to market data.
-        public SortedDictionary<DateTime, SortedDictionary<uint, MarketState>> MarketData { get { return marketData; } }
+        public SortedDictionary<DateTime, SortedDictionary<uint, MarketState>> MarketData { get { return _marketData; } }
 
-        private DataFeed blbgFeed;
+        private DataFeed _blbgFeed;
 
         public DataFactory(Security security)
         {
-            this.securityObj = security;
-            this.security = security.Name;
-            this.securityID = security.Id;
+            _securityObj = security;
+            _security = security.Name;
+            SecurityId = security.Id;
         }
 
         public void SubscribeToDataFeedEvents(DataFeed dataFeed)
         {
-            blbgFeed = dataFeed;
-            blbgFeed.BBRTDUpdate += new BloombergRTDataEventHandler(RTDataHandler);
+            _blbgFeed = dataFeed;
+            _blbgFeed.BBRTDUpdate += RTDataHandler;
         }
 
         public void AddReferenceToMarkets(MarketAggregator markets)
         {
-            this.markets = markets;
+            _markets = markets;
         }
 
         private void RTDataHandler(object sender, EventArgs e)
@@ -66,33 +62,33 @@ namespace DataWrangler
             if (e is DataFeed.BBRTDEventArgs)
             {
 
-                DataFeed.BBRTDEventArgs eventArgs = e as DataFeed.BBRTDEventArgs;
+                var eventArgs = e as DataFeed.BBRTDEventArgs;
                 if (eventArgs.cObj == this)
                 {
                     switch (eventArgs.MsgType)
                     {
                         case BloombergRTDataProvider.EventType.DataMsg:
                         case BloombergRTDataProvider.EventType.DataInit:
-                            processBBDataMsg(eventArgs);
+                            ProcessBbDataMsg(eventArgs);
                             break;
                         case BloombergRTDataProvider.EventType.StatusMsg:
-                            processBBStatusMsg(eventArgs);
+                            ProcessBbStatusMsg(eventArgs);
                             break;
                         case BloombergRTDataProvider.EventType.ErrorMsg:
-                            break;
-                        default:
                             break;
                     }
                 }
             }
         }
 
-        private void processBBStatusMsg(DataFeed.BBRTDEventArgs eventArgs)
+        private static void ProcessBbStatusMsg(DataFeed.BBRTDEventArgs eventArgs)
         {
+            if (eventArgs.Msg == null) return;
             String status = eventArgs.Msg;
+            Console.WriteLine(status);
         }
 
-        private void processBBDataMsg(DataFeed.BBRTDEventArgs eventArgs)
+        private void ProcessBbDataMsg(DataFeed.BBRTDEventArgs eventArgs)
         {
             switch (eventArgs.DataType)
             {
@@ -108,36 +104,33 @@ namespace DataWrangler
                 case BloombergRTDataProvider.TickType.All:
                     FirstTick(eventArgs.Bid, eventArgs.Ask, eventArgs.Trade);
                     break;
-                case BloombergRTDataProvider.TickType.None:
-                default:
-                    break;
             }
         }
 
-        public void FirstTick(TickData Bid, TickData Ask, TickData Trade)
+        public void FirstTick(TickData bid, TickData ask, TickData trade)
         {
-            Console.WriteLine("Summary for " + securityObj.Name);
-            DateTime timeBin = Bid.TimeStamp; // no timestamp
-            if (!mktInitialized)
+            Console.WriteLine("Summary for " + _securityObj.Name);
+            DateTime timeBin = bid.TimeStamp; // no timestamp
+            if (!_mktInitialized)
             {
-                mktInitialized = true;
-                marketData.Add(timeBin, new SortedDictionary<uint, MarketState>());
+                _mktInitialized = true;
+                _marketData.Add(timeBin, new SortedDictionary<uint, MarketState>());
 
-                lock (marketData[timeBin])
+                lock (_marketData[timeBin])
                 {
 
                     // initialize the market
-                    MarketState newState = new MarketState(securityObj, Bid, Ask, Trade);
+                    var newState = new MarketState(_securityObj, bid, ask, trade);
 
                     // Add the new state to its time bin
-                    marketData[newState.TimeStamp].Add(newState.BinCnt, newState);
+                    _marketData[newState.TimeStamp].Add(newState.BinCnt, newState);
 
-                    // log the lateset market state
-                    currentIntervalDT = timeBin;
-                    marketDataLastest[newState.TimeStamp] = newState.BinCnt;
-                    lastUpdate = timeBin;
+                    // log the latest market state
+                    _currentIntervalDt = timeBin;
+                    _marketDataLastest[newState.TimeStamp] = newState.BinCnt;
+                    _lastUpdate = timeBin;
 
-                    markets.AddTickData(this, marketData[newState.TimeStamp], newState.TimeStamp);
+                    _markets.AddTickData(this, _marketData[newState.TimeStamp], newState.TimeStamp);
                 }
             }
         }
@@ -145,37 +138,37 @@ namespace DataWrangler
         public void NewTick(TickData newData)
         {
             // get the current market state
-            SortedDictionary<uint, MarketState> currentTimeBin = marketData[currentIntervalDT];
+            SortedDictionary<uint, MarketState> currentTimeBin = _marketData[_currentIntervalDt];
             MarketState currentState = currentTimeBin[currentTimeBin.Keys.Max()];
 
             // disregard duplicates
-            if (!duplicate(newData, currentState))
+            if (!Duplicate(newData, currentState))
             {
-                if (!marketData.ContainsKey(newData.TimeStamp))
+                if (!_marketData.ContainsKey(newData.TimeStamp))
                 {
-                    marketData.Add(newData.TimeStamp, new SortedDictionary<uint, MarketState>());
+                    _marketData.Add(newData.TimeStamp, new SortedDictionary<uint, MarketState>());
                 }
                 
                 DateTime newTimeStamp = DateTime.MinValue;
-                lock (marketData[newData.TimeStamp])
+                lock (_marketData[newData.TimeStamp])
                 {
                     // create a new updated market state
-                    MarketState newState = new MarketState(securityObj, currentState, newData);
+                    var newState = new MarketState(_securityObj, currentState, newData);
 
-                    if (!marketDataLastest.ContainsKey(newState.TimeStamp))
+                    if (!_marketDataLastest.ContainsKey(newState.TimeStamp))
                     {
-                        marketDataLastest.Add(newState.TimeStamp, 0);
-                        currentIntervalDT = newState.TimeStamp;
-                        newTimeStamp = currentIntervalDT;
+                        _marketDataLastest.Add(newState.TimeStamp, 0);
+                        _currentIntervalDt = newState.TimeStamp;
+                        newTimeStamp = _currentIntervalDt;
                     }
                     else
                     {
-                        marketDataLastest[newState.TimeStamp]++;
-                        newState.BinCnt = marketDataLastest[newState.TimeStamp];
+                        _marketDataLastest[newState.TimeStamp]++;
+                        newState.BinCnt = _marketDataLastest[newState.TimeStamp];
                     }
 
                     // Add the new state to its time bin
-                    marketData[newState.TimeStamp].Add(newState.BinCnt, newState);
+                    _marketData[newState.TimeStamp].Add(newState.BinCnt, newState);
 
                     if (LogEachTick)
                     {
@@ -186,16 +179,16 @@ namespace DataWrangler
 
                 }
 
-                lastUpdate = newData.TimeStamp > lastUpdate ? newData.TimeStamp : lastUpdate;
+                _lastUpdate = newData.TimeStamp > _lastUpdate ? newData.TimeStamp : _lastUpdate;
 
                 // let the market aggregator know there is a new timestamp to aggregate
                 if (newTimeStamp != DateTime.MinValue)
-                    markets.AddTickData(this, marketData[newTimeStamp], newTimeStamp);
+                    _markets.AddTickData(this, _marketData[newTimeStamp], newTimeStamp);
 
             }
         }
 
-        private bool duplicate(TickData newData, MarketState current)
+        private bool Duplicate(TickData newData, MarketState current)
         {
             double currPrice = 0;
             bool hasSizeData = false;
@@ -204,32 +197,25 @@ namespace DataWrangler
             {
                 case Type.Ask:
                     currPrice = current.Ask;
-                    hasSizeData = ((securityObj.HasQuoteSize) && (newData.Size != current.AskVol));
+                    hasSizeData = ((_securityObj.HasQuoteSize) && (newData.Size != current.AskVol));
                     break;
                 case Type.Bid:
                     currPrice = current.Bid;
-                    hasSizeData = ((securityObj.HasQuoteSize) && (newData.Size != current.BidVol));
+                    hasSizeData = ((_securityObj.HasQuoteSize) && (newData.Size != current.BidVol));
                     break;
                 case Type.Trade:
                     currPrice = current.LastTrdPrice;
-                    hasSizeData = (securityObj.HasTradeSize);
-                    break;
-                default:
+                    hasSizeData = (_securityObj.HasTradeSize);
                     break;
             }
 
-            if ((hasSizeData) || (newData.Price != currPrice))
-            {
-                return false;
-            }
-
-            return true;
+            return (!hasSizeData) && Math.Abs(newData.Price - currPrice) < Double.Epsilon;
         }
 
-        private MarketState getCurrentState()
+        private MarketState GetCurrentState()
         {
-            SortedDictionary<uint, MarketState> LastestBin = marketData[currentIntervalDT];
-            return LastestBin[LastestBin.Keys.Max()];
+            SortedDictionary<uint, MarketState> lastestBin = _marketData[_currentIntervalDt];
+            return lastestBin[lastestBin.Keys.Max()];
 
         }
 
@@ -237,32 +223,27 @@ namespace DataWrangler
         {
             // get the data from the same time stamp,
             // or if that does not exist, the closest previous time stamp
-            if (marketData.ContainsKey(timestamp))
+            if (_marketData.ContainsKey(timestamp))
             {
-                return marketData[timestamp];
+                return _marketData[timestamp];
             }
 
-            else
+            int responseIndex = 0;
+            for (int i = _marketData.Count - 1; i >= 0; i--)
             {
-                int responseIndex = 0;
-                for (int i = marketData.Count - 1; i >= 0; i--)
+                if (_marketData.ElementAt(i).Key <= timestamp)
                 {
-                    if (marketData.ElementAt(i).Key <= timestamp)
-                    {
-                        responseIndex = i;
-                        break;
-                    }
+                    responseIndex = i;
+                    break;
                 }
-                if (marketData.Count == 0)
-                    return null;
-                else
-                    return marketData.ElementAt(responseIndex).Value;
             }
+
+            return _marketData.Count == 0 ? null : _marketData.ElementAt(responseIndex).Value;
         }
 
-        private DataRow getCurrentBarAsDataRow()
+        private static DataRow GetCurrentBarAsDataRow()
         {
-            DataTable dataTable = new DataTable();
+            var dataTable = new DataTable();
             DataRow barAsDataRow = dataTable.NewRow();
 
             return barAsDataRow;

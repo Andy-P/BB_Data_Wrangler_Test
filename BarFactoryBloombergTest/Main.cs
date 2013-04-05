@@ -29,7 +29,7 @@ namespace BarFactoryBloombergTest
         {
             const string dsPath = "TickData.qbd";
             _histFeed = new HistoricalDataHandler(dsPath);
-            _histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 0), new DateTime(2013, 3, 7, 6, 15, 0));
+            _histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 0), new DateTime(2013, 3, 7, 0, 5, 0));
 
             var NKH3 = new DataFactory(new Security("NKH3 Index", 12, Security.SecurityType.IndexFuture));
             _histFeed.AddSecurity(NKH3);

@@ -112,7 +112,7 @@ namespace DataWrangler
             }
         }
 
-        private TickData DataRowToTickData(DataFactory factory, DataRow row)
+        private static TickData DataRowToTickData(DataFactory factory, DataRow row)
         {
             Type type;
             DateTime timeStamp;
@@ -153,7 +153,7 @@ namespace DataWrangler
             return tick;
         }
 
-        private MktSummaryEvent PrepareMktSummaryEvent(DataFactory factory, MktSummaryEvent mktSummary, TickData tick)
+        private static MktSummaryEvent PrepareMktSummaryEvent(DataFactory factory, MktSummaryEvent mktSummary, TickData tick)
         {
             switch (tick.Type)
             {
@@ -214,20 +214,6 @@ namespace DataWrangler
 
             return mktSummary;
         }
-
-        private void AddHistDataToCache(DataFactory factory, TickData tick)
-        {
-            if (!CachedTickData.ContainsKey(tick.TimeStamp))
-                CachedTickData.Add(tick.TimeStamp, new Dictionary<DataFactory, List<TickData>>());
-
-            Dictionary<DataFactory, List<TickData>> timeInterval = CachedTickData[tick.TimeStamp];
-
-            if (!timeInterval.ContainsKey(factory))
-                timeInterval.Add(factory, new List<TickData>());
-            List<TickData> tickData = timeInterval[factory];
-
-            tickData.Add(tick);
-        }
         
         private static Dictionary<string, string> GetCodes(string condCode, string exchCode, Type type)
         {
@@ -261,6 +247,20 @@ namespace DataWrangler
             return codes;
         }
 
+        private void AddHistDataToCache(DataFactory factory, TickData tick)
+        {
+            if (!CachedTickData.ContainsKey(tick.TimeStamp))
+                CachedTickData.Add(tick.TimeStamp, new Dictionary<DataFactory, List<TickData>>());
+
+            Dictionary<DataFactory, List<TickData>> timeInterval = CachedTickData[tick.TimeStamp];
+
+            if (!timeInterval.ContainsKey(factory))
+                timeInterval.Add(factory, new List<TickData>());
+            List<TickData> tickData = timeInterval[factory];
+
+            tickData.Add(tick);
+        }
+        
         private struct MktSummaryEvent
         {
             public DateTime EventTime;
