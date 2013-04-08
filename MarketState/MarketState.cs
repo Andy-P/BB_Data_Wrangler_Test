@@ -11,93 +11,60 @@ namespace DataWrangler
         #region properties
 
         // Identifiers
-        private readonly Security _securityObj = null;
+        private readonly Security _securityObj;
         public string Name { get { return _securityObj.Name; } }
         public uint Id { get { return _securityObj.Id; } }
-        private uint _binCnt = 0;
-
-        // Populated by data feed
-        private DateTime timeStamp = DateTime.MinValue;
-        private MktStateType stateType;
-        private double bid;
-        private uint bidVol;
-        private double prevBid;
-        private uint prevBidVol;
-        private double ask;
-        private uint askVol;
-        private double prevAsk;
-        private uint prevAskVol;
-        private double lastTrdPrice;
-        private uint lastTrdSize;
-
-        // Calculated values
-        private double mid;
-        private double midScaled;
-
-        // Initialized on start of new interval (i.e. every 1 sec)
-        private double bidOpen;
-        private uint bidVolOpen;
-        private double askOpen;
-        private uint askVolOpen;
-        private double midOpen;
-        private double midScaledOpen;
-        private double lastPriceOpn;
-        private bool firstOfInterval = false;
-
-        // running totals from beginning of interval
-        private int bidVolChg = 0;
-        private int bidVolChgSum = 0;
-        private double volAtBid = 0;
-        private double trdCntBid = 0;
-        private int askVolChg = 0;
-        private int askVolChgSum = 0;
-        private double volAtAsk = 0;
-        private double trdCntAsk = 0;
-
-        // OrderFlow running totals for day
-        private double volAtAskTdy = 0;
-        private double volAtBidTdy = 0;
-        private double orderFlowTdy = 0;
-        private double volumeTdy = 0;
 
         // Read only properties
-        public DateTime TimeStamp { get { return timeStamp; } }
-        public MktStateType StateType { get { return stateType; } }
+        public DateTime TimeStamp { get; private set; }
+        public MktStateType StateType { get; private set; }
+        public bool FirstOfInterval { get; private set; }
 
+        // Updated on bid event
+        public double Bid { get; private set; }
+        public uint BidVol { get; private set; }
+        public double PrevBid { get; private set; }
+        public uint PrevBidVol { get; private set; }
+        public int BidVolChg { get; private set; }
+        public int BidVolChgSum { get; private set; }
+        public double BidOpen { get; private set; }
+        public uint BidVolOpen { get; private set; }
+
+        // Updated on ask event
+        public double Ask { get; private set; }
+        public uint AskVol { get; private set; }
+        public double PrevAsk { get; private set; }
+        public uint PrevAskVol { get; private set; }
+        public int AskVolChg { get; private set; }
+        public int AskVolChgSum { get; private set; }
+        public double AskOpen { get; private set; }
+        public uint AskVolOpen { get; private set; }
+
+        // Updated on quote event
+        public double MidOpen { get; private set; }
+        public double MidScaledOpen { get; private set; }
+        public double Mid { get; private set; }
+        public double MidScaled { get; private set; }
+
+        // Updated on trade event
+        public double LastTrdPrice { get; private set; }
+        public uint LastTrdSize { get; private set; }
+        public double LastPriceOpn { get; private set; }
+        public double VolAtBid { get; private set; }
+        public double TrdCntBid { get; private set; }
+        public double VolAtAsk { get; private set; }
+        public double TrdCntAsk { get; private set; }
+        public double VolAtAskTdy { get; private set; }
+        public double VolAtBidTdy { get; private set; }
+        public double OrderFlowTdy { get; private set; }
+        public double VolumeTdy { get; private set; }
+
+        private uint _binCnt;
         public uint BinCnt
         {
             get { return _binCnt; }
-            set { _binCnt = value; }
+            set { if (value > _binCnt) _binCnt = value; }
         }
-
-        public double Bid { get { return bid; } }
-        public uint BidVol { get { return bidVol; } }
-        public int BidVolChg { get { return bidVolChg; } }
-        public int BidVolChgSum { get { return bidVolChgSum; }}
-        public double Ask { get { return ask; } }
-        public uint AskVol { get { return askVol; } }
-        public int AskVolChg { get { return askVolChg; } }
-        public int AskVolChgSum { get { return askVolChgSum; } }
-        public double LastTrdPrice { get { return lastTrdPrice; } }
-        public uint LastTrdSize { get { return lastTrdSize; } }
-        public double BidOpen { get { return bidOpen; } }
-        public uint BidVolOpen { get { return bidVolOpen; } }
-        public double AskOpen { get { return askOpen; } }
-        public uint AskVolOpen { get { return askVolOpen; } }
-        public double MidOpen { get { return midOpen; } }
-        public double MidScaledOpen { get { return midScaledOpen; } }
-        public double LastPriceOpn { get { return lastPriceOpn; } }
-        public bool FirstOfInterval { get { return firstOfInterval; } }
-        public double Mid { get { return mid; } }
-        public double MidScaled { get { return midScaled; } }
-        public double VolAtBid { get { return volAtBid; } }
-        public double TrdCntBid { get { return trdCntBid; } }
-        public double VolAtAsk { get { return volAtAsk; } }
-        public double TrdCntAsk { get { return trdCntAsk; } }
-        public double VolAtAskTdy { get { return volAtAskTdy; } }
-        public double VolAtBidTdy { get { return volAtBidTdy; } }
-        public double OrderFlowTdy { get { return orderFlowTdy; } }
-        public double VolumeTdy { get { return volumeTdy; } }
 
         public SortedDictionary<double, TradesAtPrice> TrdsAtPrice = new SortedDictionary<double, TradesAtPrice>();
 
@@ -108,11 +75,15 @@ namespace DataWrangler
         // constructor used on very first event to initialize market state
         public MarketState(Security security, TickData bid, TickData ask, TickData trade)
         {
+            VolumeTdy = 0;
+            OrderFlowTdy = 0;
+            VolAtBidTdy = 0;
+            VolAtAskTdy = 0;
             _securityObj = security;
-            stateType = MktStateType.Summary;
+            StateType = MktStateType.Summary;
 
-            timeStamp = bid.TimeStamp;
-            firstOfInterval = true;
+            TimeStamp = bid.TimeStamp;
+            FirstOfInterval = true;
             OnBidQuote(bid);
             SetBidOpen(bid);
 
@@ -129,44 +100,49 @@ namespace DataWrangler
         // constructor used for each successive data event after the initial event
         public MarketState(Security security, MarketState previousMktState, TickData tickData) 
         {
+            TimeStamp = DateTime.MinValue;
+            VolumeTdy = 0;
+            OrderFlowTdy = 0;
+            VolAtBidTdy = 0;
+            VolAtAskTdy = 0;
             _securityObj = security;
 
             if (previousMktState == null)
                 throw new ArgumentException("Previous MarketState object must not be null", "previousMktState");
 
-            timeStamp = tickData.TimeStamp;
-            firstOfInterval = (tickData.TimeStamp.Subtract(previousMktState.timeStamp).TotalSeconds != 0);
+            TimeStamp = tickData.TimeStamp;
+            FirstOfInterval = (tickData.TimeStamp.Subtract(previousMktState.TimeStamp).TotalSeconds != 0);
 
-            CopyPrevState(previousMktState, firstOfInterval);
+            CopyPrevState(previousMktState, FirstOfInterval);
 
             switch (tickData.Type)
             {
                 case Type.Ask:
-                    stateType = MktStateType.Ask;
+                    StateType = MktStateType.Ask;
                     OnAskQuote(tickData);
                     SetAskVolChg(previousMktState);
                     SetMid();
-                    if (firstOfInterval)
+                    if (FirstOfInterval)
                     {
                         SetAskOpen(tickData);
                         SetMidOpen();
                     }
                     break;
                 case Type.Bid:
-                    stateType = MktStateType.Bid;
+                    StateType = MktStateType.Bid;
                     OnBidQuote(tickData);
                     SetBidVolChg(previousMktState);
                     SetMid();
-                    if (firstOfInterval)
+                    if (FirstOfInterval)
                     {
                         SetBidOpen(tickData);
                         SetMidOpen();
                     }
                     break;
                 case Type.Trade:
-                    stateType = MktStateType.Trade;
+                    StateType = MktStateType.Trade;
                     OnTrade(tickData);
-                    if (firstOfInterval)
+                    if (FirstOfInterval)
                     {
                         SetTradeOpn(tickData);
                     }
@@ -175,7 +151,7 @@ namespace DataWrangler
                     throw new ArgumentException("TickData's 'Type' parameter must be of enum of type TickData.Type", "tickData");
             }
 
-            if ((firstOfInterval) || (Codes == null))
+            if ((FirstOfInterval) || (Codes == null))
             {
                 
                 Codes = tickData.Codes;
@@ -198,82 +174,82 @@ namespace DataWrangler
 
         private void CopyPrevState(MarketState previous, bool isFirstOfInterval)
         {
-            bid = previous.bid;
-            bidVol = previous.bidVol;
-            ask = previous.ask;
-            askVol = previous.askVol;
+            Bid = previous.Bid;
+            BidVol = previous.BidVol;
+            Ask = previous.Ask;
+            AskVol = previous.AskVol;
 
-            prevBid = previous.prevBid;
-            prevBidVol = previous.prevBidVol;
-            prevAsk = previous.prevAsk;
-            prevAskVol = previous.prevAskVol;
+            PrevBid = previous.PrevBid;
+            PrevBidVol = previous.PrevBidVol;
+            PrevAsk = previous.PrevAsk;
+            PrevAskVol = previous.PrevAskVol;
 
-            mid = previous.mid;
-            midScaled = previous.midScaled;
+            Mid = previous.Mid;
+            MidScaled = previous.MidScaled;
 
             if (!isFirstOfInterval)
             {
-                bidOpen = previous.bidOpen;
-                bidVolOpen = previous.bidVolOpen;
-                askOpen = previous.askOpen;
-                askVolOpen = previous.askVolOpen;
-                midOpen = previous.midOpen;
-                midScaledOpen = previous.midScaledOpen;
-                lastPriceOpn = previous.lastPriceOpn;
+                BidOpen = previous.BidOpen;
+                BidVolOpen = previous.BidVolOpen;
+                AskOpen = previous.AskOpen;
+                AskVolOpen = previous.AskVolOpen;
+                MidOpen = previous.MidOpen;
+                MidScaledOpen = previous.MidScaledOpen;
+                LastPriceOpn = previous.LastPriceOpn;
 
-                volAtBid = previous.volAtBid;
-                volAtAsk = previous.volAtAsk;
-                trdCntBid = previous.trdCntBid;
-                trdCntAsk = previous.trdCntAsk;
-                bidVolChgSum = previous.bidVolChgSum;
-                askVolChgSum = previous.askVolChgSum;
+                VolAtBid = previous.VolAtBid;
+                VolAtAsk = previous.VolAtAsk;
+                TrdCntBid = previous.TrdCntBid;
+                TrdCntAsk = previous.TrdCntAsk;
+                BidVolChgSum = previous.BidVolChgSum;
+                AskVolChgSum = previous.AskVolChgSum;
                 TrdsAtPrice = previous.TrdsAtPrice;
             }
             else
             {
-                bidOpen = previous.bid;
-                bidVolOpen = previous.bidVol;
-                askOpen = previous.ask;
-                askVolOpen = previous.askVol;
-                midOpen = previous.mid;
-                midScaledOpen = previous.midScaled;
-                lastPriceOpn = previous.lastTrdPrice;
+                BidOpen = previous.Bid;
+                BidVolOpen = previous.BidVol;
+                AskOpen = previous.Ask;
+                AskVolOpen = previous.AskVol;
+                MidOpen = previous.Mid;
+                MidScaledOpen = previous.MidScaled;
+                LastPriceOpn = previous.LastTrdPrice;
             }
 
         }
 
         private void OnBidQuote(TickData bidEvent)
         {
-            prevBid = bid;
-            bid = bidEvent.Price;
+            PrevBid = Bid;
+            Bid = bidEvent.Price;
 
-            prevBidVol = bidVol;
-            bidVol = _securityObj.HasQuoteSize ? bidEvent.Size : 0; 
+            PrevBidVol = BidVol;
+            BidVol = _securityObj.HasQuoteSize ? bidEvent.Size : 0; 
         }
 
         private void SetBidVolChg(MarketState prevMktState)
         {
             if (_securityObj.HasQuoteSize)
             {
-                if ((bid == prevMktState.Bid))
+                if ((Bid == prevMktState.Bid))
                 {   
-                    bidVolChg = (int)(bidVol - prevMktState.BidVol);
-                    bidVolChgSum += bidVolChg;
+                    BidVolChg = (int)(BidVol - prevMktState.BidVol);
+                    BidVolChgSum += BidVolChg;
                 }
                 else
                 {
-                    if ((bid == prevMktState.Ask)) // just ticked up
+                    if ((Bid == prevMktState.Ask)) // just ticked up
                     {
-                        bidVolChg = (int)(bidVol + prevMktState.AskVol);
-                        bidVolChgSum += bidVolChg;
+                        BidVolChg = (int)(BidVol + prevMktState.AskVol);
+                        BidVolChgSum += BidVolChg;
                         //Console.WriteLine(SecurityObj.Name + " went Bid @" + timeStamp.ToLongTimeString());
                     }
                     else
                     {
-                        if ((bid == prevMktState.prevAsk)) // just ticked up, but need to look two data points back
+                        if ((Bid == prevMktState.PrevAsk)) // just ticked up, but need to look two data points back
                         {
-                            bidVolChg = (int)(bidVol + prevMktState.prevAskVol);
-                            bidVolChgSum += bidVolChg;
+                            BidVolChg = (int)(BidVol + prevMktState.PrevAskVol);
+                            BidVolChgSum += BidVolChg;
                             //Console.WriteLine(SecurityObj.Name + " went Bid @" + timeStamp.ToLongTimeString());
                         }
                     }
@@ -283,42 +259,42 @@ namespace DataWrangler
 
         private void SetBidOpen(TickData bidEvent)
         {
-            bidOpen = bidEvent.Price;
-            bidVolOpen = _securityObj.HasQuoteSize ? bidEvent.Size : 0;
+            BidOpen = bidEvent.Price;
+            BidVolOpen = _securityObj.HasQuoteSize ? bidEvent.Size : 0;
         }
 
         private void OnAskQuote(TickData askEvent)
         {
-            prevAsk = ask;
-            ask = askEvent.Price;
+            PrevAsk = Ask;
+            Ask = askEvent.Price;
 
-            prevAskVol = askVol;
-            askVol = _securityObj.HasQuoteSize? askEvent.Size : 0;  
+            PrevAskVol = AskVol;
+            AskVol = _securityObj.HasQuoteSize? askEvent.Size : 0;  
         }
 
         private void SetAskVolChg(MarketState prevMktState)
         {
             if (_securityObj.HasQuoteSize)
             {
-                if (ask == prevMktState.Ask)
+                if (Ask == prevMktState.Ask)
                 {
-                    askVolChg = (int)(askVol - prevMktState.AskVol);
-                    askVolChgSum += askVolChg;
+                    AskVolChg = (int)(AskVol - prevMktState.AskVol);
+                    AskVolChgSum += AskVolChg;
                 }
                 else
                 {
-                    if (ask == prevMktState.Bid) // just ticked down
+                    if (Ask == prevMktState.Bid) // just ticked down
                     {
-                        askVolChg = (int)(askVol + prevMktState.BidVol);
-                        askVolChgSum += askVolChg;
+                        AskVolChg = (int)(AskVol + prevMktState.BidVol);
+                        AskVolChgSum += AskVolChg;
                         //Console.WriteLine(SecurityObj.Name + " went offered @" + timeStamp.ToLongTimeString());
                     }
                     else
                     {
-                        if (ask == prevMktState.prevBid) // just ticked down, but we need to look two data points back for price/volume
+                        if (Ask == prevMktState.PrevBid) // just ticked down, but we need to look two data points back for price/volume
                         {
-                            askVolChg = (int)(askVol + prevMktState.prevBidVol);
-                            askVolChgSum += askVolChg;
+                            AskVolChg = (int)(AskVol + prevMktState.PrevBidVol);
+                            AskVolChgSum += AskVolChg;
                             //Console.WriteLine(SecurityObj.Name + " went offered @" + timeStamp.ToLongTimeString());
                         }
 
@@ -329,71 +305,71 @@ namespace DataWrangler
 
         private void SetAskOpen(TickData askEvent)
         {
-            askOpen = askEvent.Price;
-            askVolOpen = _securityObj.HasQuoteSize ? askEvent.Size : 0;
+            AskOpen = askEvent.Price;
+            AskVolOpen = _securityObj.HasQuoteSize ? askEvent.Size : 0;
         }
 
         private void OnTrade(TickData trade)
         {
-            lastTrdPrice = trade.Price;
-            if (lastTrdPrice == Bid) trdCntBid++;
-            if (lastTrdPrice == Ask) trdCntAsk++;
+            LastTrdPrice = trade.Price;
+            if (LastTrdPrice == Bid) TrdCntBid++;
+            if (LastTrdPrice == Ask) TrdCntAsk++;
 
             if ((_securityObj.HasTradeSize) && (trade.Size > 0))
             {
-                lastTrdSize = trade.Size;
-                if (lastTrdPrice == Bid) volAtBid += lastTrdSize;
-                if (lastTrdPrice == Ask) volAtAsk += lastTrdSize;                
+                LastTrdSize = trade.Size;
+                if (LastTrdPrice == Bid) VolAtBid += LastTrdSize;
+                if (LastTrdPrice == Ask) VolAtAsk += LastTrdSize;                
             }
             else
             {
-                lastTrdSize = 0;
-                volAtBid = 0;
-                volAtAsk = 0;                
+                LastTrdSize = 0;
+                VolAtBid = 0;
+                VolAtAsk = 0;                
             }
 
             if (TrdsAtPrice.ContainsKey(trade.Price))
             {
-                TrdsAtPrice[trade.Price].NewTradeAtPrice(lastTrdSize, this);
+                TrdsAtPrice[trade.Price].NewTradeAtPrice(LastTrdSize, this);
             }
             else
             {
                 if ((_securityObj.HasTradeSize) && (trade.Size > 0))
-                    TrdsAtPrice.Add(lastTrdPrice, new TradesAtPrice(lastTrdPrice, lastTrdSize, this));
+                    TrdsAtPrice.Add(LastTrdPrice, new TradesAtPrice(LastTrdPrice, LastTrdSize, this));
                 else
-                    TrdsAtPrice.Add(lastTrdPrice, new TradesAtPrice(lastTrdPrice, this));
+                    TrdsAtPrice.Add(LastTrdPrice, new TradesAtPrice(LastTrdPrice, this));
             }
         }
         
         private void SetTradeOpn(TickData trade)
         {
-            lastPriceOpn = trade.Price;
+            LastPriceOpn = trade.Price;
         }
 
         private void SetMid()
         {
-            mid = (bid + ask) / 2;
-            if ((_securityObj.HasQuoteSize) && (bidVol > 0) && (askVol > 0))
+            Mid = (Bid + Ask) / 2;
+            if ((_securityObj.HasQuoteSize) && (BidVol > 0) && (AskVol > 0))
             {
-                midScaled = (ask - bid) * bidVol / (bidVol + askVol) + bid;
+                MidScaled = (Ask - Bid) * BidVol / (BidVol + AskVol) + Bid;
             }
             else
             {
-                midScaled = mid;
+                MidScaled = Mid;
             }
         }
         
         private void SetMidOpen()
         {
-            midOpen = mid;
-            midScaledOpen = midScaled;
+            MidOpen = Mid;
+            MidScaledOpen = MidScaled;
         }
 
         public string ToStringAllData()
         {
             string dataStr = _securityObj.Name +
-                             " " + timeStamp.ToLongTimeString() +
-                             "  Type " + stateType.ToString() +
+                             " " + TimeStamp.ToLongTimeString() +
+                             "  Type " + StateType.ToString() +
                              "  Bid " + Bid.ToString() +
                              //"  BidOpn " + BidOpen.ToString() +
                              "  BidVol " + BidVol.ToString() +
@@ -427,7 +403,7 @@ namespace DataWrangler
         public string ToStringAllTrades()
         {
             string output = _securityObj.Name +
-                " " + timeStamp.ToLongTimeString() + " " +
+                " " + TimeStamp.ToLongTimeString() + " " +
                 ToStringAllTradesNoIndentity();
 
             return output.TrimEnd();
