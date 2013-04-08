@@ -104,10 +104,14 @@ namespace DataWrangler
                 if (tick != null)
                 {
                     if (!mktSummary.Complete)
+                    {
                         mktSummary = PrepareMktSummaryEvent(factory, mktSummary, tick);
-
-                    if (mktSummary.Complete)
+                        _mktSummaryEvents[factory] = mktSummary;
+                    }
+                    else
+                    {
                         AddHistDataToCache(factory, tick);
+                    }
                 }
             }
         }
@@ -280,7 +284,17 @@ namespace DataWrangler
             {
                 foreach (var security in secondsBin.Value)
                 {
-                    DataFactory factory = security.Key; 
+                    DataFactory factory = security.Key;
+                    if (_mktSummaryEvents.ContainsKey(factory))
+                    {
+                        MktSummaryEvent mktSummaryEvent = _mktSummaryEvents[factory];
+                        if (mktSummaryEvent.EventTime <= secondsBin.Key)
+                        {
+                            factory.FirstTick(mktSummaryEvent.Bid, mktSummaryEvent.Ask, mktSummaryEvent.Trade);
+                            _mktSummaryEvents.Remove(factory);
+                        }
+                    }
+
                     foreach (TickData tickData in security.Value)
                     {
                         factory.NewTick(tickData);
@@ -289,10 +303,6 @@ namespace DataWrangler
             }
         }
 
-        public void PrepSummaryDataEvent()
-        {
-
-        }
         
         #endregion
     }

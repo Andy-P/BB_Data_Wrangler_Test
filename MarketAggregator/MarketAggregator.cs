@@ -1,29 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DataWrangler
 {
     public class MarketAggregator
     {
-        // main data respository
+        // main data repository
         public SortedDictionary<DateTime, Dictionary<Security, SortedDictionary<uint, MarketState>>>
             Markets = new SortedDictionary<DateTime, Dictionary<Security, SortedDictionary<uint, MarketState>>>();
 
-        private DateTime LastState = DateTime.MinValue;
+        private DateTime _lastState = DateTime.MinValue;
 
-        private List<DataFactory> Securitites = new List<DataFactory>();
+        private readonly List<DataFactory> _securitites = new List<DataFactory>();
 
-        public MarketAggregator()
-        {
+        //public MarketAggregator()
+        //{
 
-        }
+        //}
 
         public void AddSecurity(DataFactory factory)
         {
-            Securitites.Add(factory);
+            _securitites.Add(factory);
         }
 
         public void AddTickData(DataFactory factory, SortedDictionary<uint, MarketState> state, DateTime stateTime)
@@ -39,24 +36,12 @@ namespace DataWrangler
                 Dictionary<Security, SortedDictionary<uint, MarketState>> allMarketsAtTime = Markets[stateTime];
 
 
-                foreach (DataFactory f in Securitites)
+                foreach (DataFactory f in _securitites)
                 {
                     // no market data for this security, for this time stamp exists
                     if (!allMarketsAtTime.ContainsKey(f.SecurityObj))
                     {
-                        SortedDictionary<uint, MarketState> mktData;
-
-                        if (factory.Equals(f))
-                        {
-                            mktData = state;
-                        }
-                        else
-                        {
-                            // get the data from the same time stamp,
-                            // or if that does not exist, the closest previous time stamp
-                            mktData = f.GetCurrentOrBefore(stateTime);
-                        }
-
+                        SortedDictionary<uint, MarketState> mktData = factory.Equals(f) ? state : f.GetCurrentOrBefore(stateTime);
                         allMarketsAtTime.Add(f.SecurityObj, mktData);
                     }
                     else // market data for this security, for this time stamp exists already
@@ -68,18 +53,7 @@ namespace DataWrangler
                     }
                 }
 
-                //string nudge = "";
-                //Console.WriteLine(stateTime.ToLongTimeString());
-                //foreach (SortedDictionary<uint, MarketState> item in allMarketsAtTime.Values)
-                //{
-                //    if (item != null)
-                //    {
-                //        int cnt = item.Count - 1;
-                //        Console.WriteLine(nudge + item[(uint)cnt].ToStringAllData());
-                //        nudge += "   ";
-                //    }
-                //}
-                //Console.WriteLine(" ");
+                if (_lastState < stateTime) _lastState = stateTime;
 
             }
             // check if DateTime stamp exists.
