@@ -31,13 +31,14 @@ namespace BarFactoryBloombergTest
             _histFeed = new HistoricalDataHandler(dsPath);
             _markets = new MarketAggregator();
 
-            _histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 58), new DateTime(2013, 3, 7, 0, 15, 00));
+            //_histFeed.AddDataInterval(new DateTime(2013, 3, 5, 23, 59, 58), new DateTime(2013, 3, 6, 0, 15, 00));
+            _histFeed.AddDataInterval(new DateTime(2013, 3, 6, 0, 4, 53), new DateTime(2013, 3, 6, 0, 4, 55));
 
             var NKH3 = new DataFactory(new Security("NKH3 Index", 12, Security.SecurityType.IndexFuture));
             _histFeed.AddSecurity(NKH3);
             _markets.AddSecurity(NKH3);
             NKH3.AddReferenceToMarkets(_markets);
-            NKH3.LogEachTick = true;
+            //NKH3.LogEachTick = true;
 
             //var NOH3 = new DataFactory(new Security("NOH3 Index", 17, Security.SecurityType.IndexFuture));
             //_histFeed.AddSecurity(NOH3);
@@ -71,6 +72,9 @@ namespace BarFactoryBloombergTest
             _histFeed.PlayBackData();
             TimeSpan time = DateTime.Now - start;
             Console.WriteLine("Playback time {0} seconds", time.Seconds.ToString());
+
+
+            _markets.BatchWriteOutData(MarketAggregator.OutPutMode.FlatFile);
 
 
 

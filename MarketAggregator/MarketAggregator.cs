@@ -9,8 +9,9 @@ namespace DataWrangler
         public Mode InputMode { get; set; }
 
         public enum OutPutMode { FlatFile, Xml, Binary, SqlTable }
-        public OutPutMode ExporttMode { get; set; }
+        public OutPutMode ExportMode { get; set; }
 
+        public string OutputPath { get; set; }
 
         // main data repository
         public SortedDictionary<DateTime, Dictionary<Security, SortedDictionary<uint, MarketState>>>
@@ -71,11 +72,12 @@ namespace DataWrangler
             // if exsits, replace with latest data
         }
 
-        public static void BatchWriteOutData(OutPutMode outPutMode)
+        public void BatchWriteOutData(OutPutMode outPutMode)
         {
             switch (outPutMode)
             {
                 case OutPutMode.FlatFile:
+                    WriteOutFlatFile();
                     break;
                 case OutPutMode.Xml:
                     break;
@@ -87,6 +89,35 @@ namespace DataWrangler
                     throw new ArgumentOutOfRangeException("outPutMode");
             }
         }
+
+        private void WriteOutFlatFile()
+        {
+            bool headerWritten = false;
+            foreach (var second in Markets)
+            {
+                foreach (var security in second.Value)
+                {
+                    MarketState lastTick = security.Value[(uint) (security.Value.Count - 1)];
+
+                    if (!headerWritten)
+                    {
+                        Console.WriteLine(lastTick.GetHeadersString() + lastTick.GetTradesHeaderString(3));
+                        headerWritten = true;
+                    }
+
+                    string lastTickStr = MarketStateToString(lastTick) + ",";
+                    Console.WriteLine(lastTickStr);
+                }
+            }
+        }
+
+        private string MarketStateToString(MarketState lastTick)
+        {
+            string output = lastTick.ToFlatFileStringAllData() + lastTick.ToFlatFileStringAllTrades(3);
+
+            return output;
+        }
+
 
     }
 }

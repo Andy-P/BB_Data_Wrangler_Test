@@ -434,6 +434,73 @@ namespace DataWrangler
             return dataStr;
         }
 
+        public string GetHeadersString()
+        {
+            return "Name"
+                   + ",DateTime"
+                   + ",Type"
+                   + ",Bid"
+                   + ",BidOpn"
+                   + ",BidVol"
+                   + ",BidVolOpen"
+                   + ",BidVolChg"
+                   + ",BidVolChgSum"
+                   + ",BidVolChgCnt"
+                   + ",VolAtBid" 
+                   + ",TrdCntBid" 
+                   + ",Ask" 
+                   + ",AskOpen" 
+                   + ",AskVol"
+                   + ",AskVolOpen"
+                   + ",AskVolChg"
+                   + ",AskVolChgSum"
+                   + ",AskVolChgCnt"
+                   + ",VolAtAsk"
+                   + ",TrdCntAsk "
+                   + ",Mid"
+                   + ",MidOpn"
+                   + ",MidScaled"
+                   + ",MidScaledOpen"
+                   + ",LastPrice"
+                   + ",LastPriceOpn"
+                   + ",LastSize";
+        }
+
+        public string ToFlatFileStringAllData()
+        {
+            const string del = ", ";
+            string dataStr = _securityObj.Name +
+                             del + TimeStamp.ToLongTimeString() +
+                             del + StateType.ToString() +
+                             del + Bid.ToString() +
+                             del + BidOpen.ToString() +
+                             del + BidVol.ToString() +
+                             del + BidVolOpen.ToString() +
+                             del + BidVolChg.ToString() +
+                             del + BidVolChgSum.ToString() +
+                             del + BidVolChgCnt.ToString() +
+                             del + VolAtBid.ToString() +
+                             del + TrdCntBid.ToString() +
+                             del + Ask.ToString() +
+                             del + AskOpen.ToString() +
+                             del + AskVol.ToString() +
+                             del + AskVolOpen.ToString() +
+                             del + AskVolChg.ToString() +
+                             del + AskVolChgSum.ToString() +
+                             del + AskVolChgCnt.ToString() +
+                             del + VolAtAsk.ToString() +
+                             del + TrdCntAsk.ToString() +
+                             del + Mid.ToString() +
+                             del + MidOpen.ToString() +
+                             del + MidScaled.ToString("#.0000") +
+                             del + MidScaledOpen.ToString("#.0000") +
+                             del + LastTrdPrice.ToString() +
+                             del + LastPriceOpn.ToString() +
+                             del + LastTrdSize.ToString();
+
+            return dataStr;
+        }
+        
         public string ToStringAllTrades()
         {
             string output = _securityObj.Name +
@@ -467,7 +534,60 @@ namespace DataWrangler
 
             return output.TrimEnd();
         }
-        
+
+        public string ToFlatFileStringAllTrades(int maxSize)
+        {
+            const string del = ",";
+            string output = del;
+
+            int prcCnt = 0;
+            foreach (var p in TrdsAtPrice.Values)
+            {
+                string priceStr = p.Price.ToString() +
+                                  del + p.TotalVolume.ToString() +
+                                  del + p.VolAtBid.ToString() +
+                                  del + p.VolAtAsk.ToString() +
+                                  del + p.TradeCount.ToString() +
+                                  del + p.CntAtBid.ToString() +
+                                  del + p.CntAtAsk.ToString();
+
+                output += priceStr + ",";
+
+                prcCnt++;
+                if (prcCnt >= maxSize) break;
+            }
+             
+            for (int i = prcCnt; i < maxSize; i++)
+            {
+                output += "0,0,0,0,0,0,0,0";
+            }
+
+            return output.TrimEnd();
+
+        }
+
+        public string GetTradesHeaderString(int maxSize)
+        {
+
+            const string del = ",";
+            string output = ",";
+
+            for (int i = 0; i < maxSize; i++)
+            {
+                string header = "Price" + i + del +
+                                " Vol" + i + del +
+                                " VolBid" + i + del +
+                                " VolAsk" + i + del +
+                                " Cnt" + i + del +
+                                " CntBid" + i + del +
+                                " CntAsk" + i + del;
+
+                output += header;
+            }
+
+            return output;
+        }
+
         public class TradesAtPrice
         {
             public double Price;
