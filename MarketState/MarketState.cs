@@ -27,6 +27,7 @@ namespace DataWrangler
         public uint PrevBidVol { get; private set; }
         public int BidVolChg { get; private set; }
         public int BidVolChgSum { get; private set; }
+        public int BidVolChgCnt { get; private set; }
         public double BidOpen { get; private set; }
         public uint BidVolOpen { get; private set; }
 
@@ -37,6 +38,7 @@ namespace DataWrangler
         public uint PrevAskVol { get; private set; }
         public int AskVolChg { get; private set; }
         public int AskVolChgSum { get; private set; }
+        public int AskVolChgCnt { get; private set; }
         public double AskOpen { get; private set; }
         public uint AskVolOpen { get; private set; }
 
@@ -202,7 +204,9 @@ namespace DataWrangler
                 TrdCntBid = previous.TrdCntBid;
                 TrdCntAsk = previous.TrdCntAsk;
                 BidVolChgSum = previous.BidVolChgSum;
+                BidVolChgCnt = previous.BidVolChgCnt;
                 AskVolChgSum = previous.AskVolChgSum;
+                AskVolChgCnt = previous.AskVolChgCnt;
                 TrdsAtPrice = previous.TrdsAtPrice;
             }
             else
@@ -235,6 +239,7 @@ namespace DataWrangler
                 {   
                     BidVolChg = (int)(BidVol - prevMktState.BidVol);
                     BidVolChgSum += BidVolChg;
+                    SetBidVolChgCnt(BidVolChg);
                 }
                 else
                 {
@@ -242,6 +247,7 @@ namespace DataWrangler
                     {
                         BidVolChg = (int)(BidVol + prevMktState.AskVol);
                         BidVolChgSum += BidVolChg;
+                        SetBidVolChgCnt(BidVolChg);
                         //Console.WriteLine(SecurityObj.Name + " went Bid @" + timeStamp.ToLongTimeString());
                     }
                     else
@@ -250,10 +256,22 @@ namespace DataWrangler
                         {
                             BidVolChg = (int)(BidVol + prevMktState.PrevAskVol);
                             BidVolChgSum += BidVolChg;
+                            SetBidVolChgCnt(BidVolChg);
                             //Console.WriteLine(SecurityObj.Name + " went Bid @" + timeStamp.ToLongTimeString());
                         }
                     }
                 }
+            }
+        }
+
+        private void SetBidVolChgCnt(int bidVolChg)
+        {
+            if (bidVolChg != 0 )
+            {
+                if (bidVolChg > 0)
+                    BidVolChgCnt++;
+                else
+                    BidVolChgCnt--;
             }
         }
 
@@ -280,6 +298,7 @@ namespace DataWrangler
                 {
                     AskVolChg = (int)(AskVol - prevMktState.AskVol);
                     AskVolChgSum += AskVolChg;
+                    SetAskVolChgCnt(AskVolChg);
                 }
                 else
                 {
@@ -287,6 +306,7 @@ namespace DataWrangler
                     {
                         AskVolChg = (int)(AskVol + prevMktState.BidVol);
                         AskVolChgSum += AskVolChg;
+                        SetAskVolChgCnt(AskVolChg);
                         //Console.WriteLine(SecurityObj.Name + " went offered @" + timeStamp.ToLongTimeString());
                     }
                     else
@@ -295,11 +315,23 @@ namespace DataWrangler
                         {
                             AskVolChg = (int)(AskVol + prevMktState.PrevBidVol);
                             AskVolChgSum += AskVolChg;
+                            SetAskVolChgCnt(AskVolChg);
                             //Console.WriteLine(SecurityObj.Name + " went offered @" + timeStamp.ToLongTimeString());
                         }
 
                     }
                 }
+            }
+        }
+
+        private void SetAskVolChgCnt(int askVolChgCnt)
+        {
+            if (askVolChgCnt != 0)
+            {
+                if (askVolChgCnt > 0)
+                    AskVolChgCnt++;
+                else
+                    AskVolChgCnt--;
             }
         }
 
@@ -370,31 +402,33 @@ namespace DataWrangler
             string dataStr = _securityObj.Name +
                              " " + TimeStamp.ToLongTimeString() +
                              "  Type " + StateType.ToString() +
-                             "  Bid " + Bid.ToString() +
+                             //"  Bid " + Bid.ToString() +
                              //"  BidOpn " + BidOpen.ToString() +
-                             "  BidVol " + BidVol.ToString() +
+                             //"  BidVol " + BidVol.ToString() +
                              //"  BidVolOpen " + BidVolOpen.ToString() +
                              //"  BidVolChg " + BidVolChg.ToString() +
                              //"  BidVolChgSum " + BidVolChgSum.ToString() +
+                             "  BidVolChgCnt " + BidVolChgCnt.ToString() +
                              //"  VolAtBid " + VolAtBid.ToString() +
                              //"  TrdCntBid " + TrdCntBid.ToString() +
-                             "  Ask " + Ask.ToString() +
+                             //"  Ask " + Ask.ToString() +
                              //"  AskOpen " + AskOpen.ToString() +
-                             "  AskVol " + AskVol.ToString() +
+                             //"  AskVol " + AskVol.ToString() +
                              //"  AskVolOpen " + AskVolOpen.ToString() +
                              //"  AskVolChg " + AskVolChg.ToString() +
                              //"  AskVolChgSum " + AskVolChgSum.ToString() +
+                             "  AskVolChgCnt " + AskVolChgCnt.ToString() +
                              //"  VolAtAsk " + VolAtAsk.ToString() +
                              //"  TrdCntAsk  " + TrdCntAsk.ToString() +
-                             //"  Mid " + Mid.ToString() +
+                             "  Mid " + Mid.ToString() +
                              //"  MidOpn " + MidOpen.ToString() +
                              //"  MidScaled " + MidScaled.ToString("#.00") +
                              //"  MidScaledOpen " + MidScaledOpen.ToString("#.00") +
-                             "  LastPrice " + LastTrdPrice.ToString() +
+                             //"  LastPrice " + LastTrdPrice.ToString() +
                              //"  LastPriceOpn " + LastPriceOpn.ToString() +
                              "  LastSize " + LastTrdSize.ToString();
 
-            //dataStr = SecurityObj.Name + Environment.NewLine + " {" + Environment.NewLine +
+            // dataStr = SecurityObj.Name + Environment.NewLine + " {" + Environment.NewLine +
             //    "  LastSize " + LastTrdSize.ToString() + Environment.NewLine + " }";
 
             return dataStr;

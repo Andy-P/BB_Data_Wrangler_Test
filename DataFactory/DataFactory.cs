@@ -173,7 +173,7 @@ namespace DataWrangler
                     if (LogEachTick)
                     {
                         string output = newState.ToStringAllData();
-                        if (newState.StateType == MktStateType.Trade) output +=  " " + newState.ToStringAllTradesNoIndentity();
+                        //if (newState.StateType == MktStateType.Trade) output +=  " " + newState.ToStringAllTradesNoIndentity();
                         Console.WriteLine(output);
                     }
 

@@ -5,6 +5,13 @@ namespace DataWrangler
 {
     public class MarketAggregator
     {
+        public enum Mode { RealTime = 1, Historical = 0 }
+        public Mode InputMode { get; set; }
+
+        public enum OutPutMode { FlatFile, Xml, Binary, SqlTable }
+        public OutPutMode ExporttMode { get; set; }
+
+
         // main data repository
         public SortedDictionary<DateTime, Dictionary<Security, SortedDictionary<uint, MarketState>>>
             Markets = new SortedDictionary<DateTime, Dictionary<Security, SortedDictionary<uint, MarketState>>>();
@@ -13,10 +20,10 @@ namespace DataWrangler
 
         private readonly List<DataFactory> _securitites = new List<DataFactory>();
 
-        //public MarketAggregator()
-        //{
-
-        //}
+        public MarketAggregator()
+        {
+            InputMode = Mode.RealTime;
+        }
 
         public void AddSecurity(DataFactory factory)
         {
@@ -63,12 +70,23 @@ namespace DataWrangler
             
             // if exsits, replace with latest data
         }
-        
-        // 1. Need container for each market
-        // 2. Need container for all markets
-        // 3. Need to keep references only
-        // 4. Need to use last second's state as final output
-        // 5. Needs to work in both R/T and Off-line
+
+        public static void BatchWriteOutData(OutPutMode outPutMode)
+        {
+            switch (outPutMode)
+            {
+                case OutPutMode.FlatFile:
+                    break;
+                case OutPutMode.Xml:
+                    break;
+                case OutPutMode.Binary:
+                    break;
+                case OutPutMode.SqlTable:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("outPutMode");
+            }
+        }
 
     }
 }

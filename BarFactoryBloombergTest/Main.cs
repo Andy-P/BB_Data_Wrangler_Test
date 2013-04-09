@@ -31,45 +31,44 @@ namespace BarFactoryBloombergTest
             _histFeed = new HistoricalDataHandler(dsPath);
             _markets = new MarketAggregator();
 
-            _histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 30), new DateTime(2013, 3, 7, 6, 10, 00));
+            _histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 58), new DateTime(2013, 3, 7, 0, 15, 00));
 
             var NKH3 = new DataFactory(new Security("NKH3 Index", 12, Security.SecurityType.IndexFuture));
             _histFeed.AddSecurity(NKH3);
             _markets.AddSecurity(NKH3);
             NKH3.AddReferenceToMarkets(_markets);
-            //NKH3.LogEachTick = true;
+            NKH3.LogEachTick = true;
 
-            var NOH3 = new DataFactory(new Security("NOH3 Index", 17, Security.SecurityType.IndexFuture));
-            _histFeed.AddSecurity(NOH3);
-            _markets.AddSecurity(NOH3);
-            NOH3.AddReferenceToMarkets(_markets);
+            //var NOH3 = new DataFactory(new Security("NOH3 Index", 17, Security.SecurityType.IndexFuture));
+            //_histFeed.AddSecurity(NOH3);
+            //_markets.AddSecurity(NOH3);
+            //NOH3.AddReferenceToMarkets(_markets);
 
-            var NIH3 = new DataFactory(new Security("NIH3 Index", 21, Security.SecurityType.IndexFuture));
-            _histFeed.AddSecurity(NIH3);
-            _markets.AddSecurity(NIH3);
-            NIH3.AddReferenceToMarkets(_markets);
-            //NIH3.LogEachTick = true;
+            //var NIH3 = new DataFactory(new Security("NIH3 Index", 21, Security.SecurityType.IndexFuture));
+            //_histFeed.AddSecurity(NIH3);
+            //_markets.AddSecurity(NIH3);
+            //NIH3.AddReferenceToMarkets(_markets);
+            ////NIH3.LogEachTick = true;
 
-            var TPH3 = new DataFactory(new Security("TPH3 Index", 26, Security.SecurityType.IndexFuture));
-            _histFeed.AddSecurity(TPH3);
-            _markets.AddSecurity(TPH3);
-            TPH3.AddReferenceToMarkets(_markets);
+            //var TPH3 = new DataFactory(new Security("TPH3 Index", 26, Security.SecurityType.IndexFuture));
+            //_histFeed.AddSecurity(TPH3);
+            //_markets.AddSecurity(TPH3);
+            //TPH3.AddReferenceToMarkets(_markets);
 
-            var JBH3 = new DataFactory(new Security("JBH3 Comdty", 31, Security.SecurityType.IndexFuture));
-            _histFeed.AddSecurity(JBH3);
-            _markets.AddSecurity(JBH3);
-            JBH3.AddReferenceToMarkets(_markets);
+            //var JBH3 = new DataFactory(new Security("JBH3 Comdty", 31, Security.SecurityType.IndexFuture));
+            //_histFeed.AddSecurity(JBH3);
+            //_markets.AddSecurity(JBH3);
+            //JBH3.AddReferenceToMarkets(_markets);
 
-            var JPY = new DataFactory(new Security("JPY Curncy", 9, Security.SecurityType.IndexFuture));
-            _histFeed.AddSecurity(JPY);
-            _markets.AddSecurity(JPY);
-            JPY.AddReferenceToMarkets(_markets);
+            //var JPY = new DataFactory(new Security("JPY Curncy", 9, Security.SecurityType.IndexFuture));
+            //_histFeed.AddSecurity(JPY);
+            //_markets.AddSecurity(JPY);
+            //JPY.AddReferenceToMarkets(_markets);
 
             _histFeed.LoadHistoricalData();
 
             DateTime start = DateTime.Now;
             _histFeed.PlayBackData();
-
             TimeSpan time = DateTime.Now - start;
             Console.WriteLine("Playback time {0} seconds", time.Seconds.ToString());
 
