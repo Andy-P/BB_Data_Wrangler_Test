@@ -538,12 +538,12 @@ namespace DataWrangler
         public string ToFlatFileStringAllTrades(int maxSize)
         {
             const string del = ",";
-            string output = del;
+            string output = String.Empty;
 
             int prcCnt = 0;
             foreach (var p in TrdsAtPrice.Values)
             {
-                string priceStr = p.Price.ToString() +
+                string priceStr = del + p.Price.ToString() +
                                   del + p.TotalVolume.ToString() +
                                   del + p.VolAtBid.ToString() +
                                   del + p.VolAtAsk.ToString() +
@@ -551,7 +551,7 @@ namespace DataWrangler
                                   del + p.CntAtBid.ToString() +
                                   del + p.CntAtAsk.ToString();
 
-                output += priceStr + ",";
+                output += priceStr;
 
                 prcCnt++;
                 if (prcCnt >= maxSize) break;

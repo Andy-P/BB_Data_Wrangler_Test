@@ -101,7 +101,7 @@ namespace DataWrangler
 
                     if (!headerWritten)
                     {
-                        Console.WriteLine(lastTick.GetHeadersString() + lastTick.GetTradesHeaderString(3));
+                        Console.WriteLine(lastTick.GetHeadersString() + lastTick.GetTradesHeaderString(5));
                         headerWritten = true;
                     }
 
@@ -113,7 +113,7 @@ namespace DataWrangler
 
         private string MarketStateToString(MarketState lastTick)
         {
-            string output = lastTick.ToFlatFileStringAllData() + lastTick.ToFlatFileStringAllTrades(3);
+            string output = lastTick.ToFlatFileStringAllData() + lastTick.ToFlatFileStringAllTrades(5);
 
             return output;
         }
