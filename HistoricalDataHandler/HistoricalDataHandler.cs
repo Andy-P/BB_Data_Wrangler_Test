@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 
 namespace DataWrangler
 {
@@ -151,6 +152,8 @@ namespace DataWrangler
                                     SecurityObj = factory.SecurityObj,
                                     SecurityID = factory.SecurityObj.Id
                                 };
+
+                                //Console.WriteLine(tick.ToString());
                             }
                         }
 

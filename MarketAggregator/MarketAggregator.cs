@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace DataWrangler
 {
@@ -64,20 +65,19 @@ namespace DataWrangler
                 if (_lastState < stateTime) _lastState = stateTime;
 
             }
-            // check if DateTime stamp exists.
-            //  If not, create it then
-            //  create a security entry for each security and fill it with last seconds state
-
-            
-            // if exsits, replace with latest data
         }
 
         public void BatchWriteOutData(OutPutMode outPutMode)
         {
+            BatchWriteOutData(outPutMode, String.Empty, 0);
+        }
+
+        public void BatchWriteOutData(OutPutMode outPutMode, string filePath, int cutOffHour)
+        {
             switch (outPutMode)
             {
                 case OutPutMode.FlatFile:
-                    WriteOutFlatFile();
+                    WriteOutFlatFile(filePath, cutOffHour);
                     break;
                 case OutPutMode.Xml:
                     break;
@@ -90,26 +90,68 @@ namespace DataWrangler
             }
         }
 
-        private void WriteOutFlatFile()
+        private void WriteOutFlatFile(string filePath, int cutOffHour)
         {
             bool headerWritten = false;
-            foreach (var second in Markets)
-            {
-                foreach (var security in second.Value)
-                {
-                    MarketState lastTick = security.Value[(uint) (security.Value.Count - 1)];
 
-                    if (!headerWritten)
+            DateTime date = DateTime.MinValue;
+            List<string> dataCache = new List<string>();
+            StringBuilder fileName = new StringBuilder();
+            StringBuilder header = new StringBuilder();
+            
+            foreach (var timeStamp in Markets)
+            {
+                // calculate the header using the tickdata's built-in funnction
+                if (!headerWritten)
+                {
+                    foreach (var security in timeStamp.Value)
                     {
-                        Console.WriteLine(lastTick.GetHeadersString() + lastTick.GetTradesHeaderString(5));
-                        headerWritten = true;
+                        MarketState lastTick = security.Value[0];
+                        header.Append(lastTick.GetHeadersString() + lastTick.GetTradesHeaderString(5));
                     }
 
-                    string lastTickStr = MarketStateToString(lastTick) + ",";
-                    Console.WriteLine(lastTickStr);
+                    Console.WriteLine(header.ToString());
+                    headerWritten = true;
                 }
+
+
+                // Output a new file for each day. The end of each day is defined by a cutOffHour
+                DateTime current = timeStamp.Key;
+                if (date == DateTime.MinValue || ((current.Day != date.Day) && (current.Hour >= cutOffHour)))
+                {
+                    if (dataCache.Count > 0)
+                        writeCacheToFile(fileName.ToString(), dataCache);
+                    dataCache.Add(header.ToString());
+
+                    date = current;
+                    fileName.Clear();
+                    fileName.Append(filePath);
+                    fileName.Append(date.Year.ToString() + date.Month.ToString("00") + date.Day.ToString("00") + ".csv");
+                    Console.WriteLine(fileName.ToString());
+
+                }
+                
+                StringBuilder data = new StringBuilder();
+                foreach (var security in timeStamp.Value)
+                {
+                    MarketState lastTick = security.Value[(uint)(security.Value.Count - 1)];
+                    data.Append(MarketStateToString(lastTick) + ",");
+                }
+
+                dataCache.Add(data.ToString());
+                Console.WriteLine(data.ToString());
             }
+
+            if (dataCache.Count > 0)
+                writeCacheToFile(fileName.ToString(), dataCache);
         }
+
+        private void writeCacheToFile(string path, List<string> dataCache)
+        {
+            System.IO.File.WriteAllLines(path, dataCache);
+            dataCache.Clear();
+        }
+
 
         private string MarketStateToString(MarketState lastTick)
         {

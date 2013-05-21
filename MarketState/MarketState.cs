@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace DataWrangler
 {
@@ -42,7 +43,7 @@ namespace DataWrangler
         public double AskOpen { get; private set; }
         public uint AskVolOpen { get; private set; }
 
-        // Updated on quote event
+        // Updated on either quote event
         public double MidOpen { get; private set; }
         public double MidScaledOpen { get; private set; }
         public double Mid { get; private set; }
@@ -433,44 +434,47 @@ namespace DataWrangler
 
             return dataStr;
         }
-
-        public string GetHeadersString()
+        
+        public string ToStringAllTrades()
         {
-            return "Name"
-                   + ",DateTime"
-                   + ",Type"
-                   + ",Bid"
-                   + ",BidOpn"
-                   + ",BidVol"
-                   + ",BidVolOpen"
-                   + ",BidVolChg"
-                   + ",BidVolChgSum"
-                   + ",BidVolChgCnt"
-                   + ",VolAtBid" 
-                   + ",TrdCntBid" 
-                   + ",Ask" 
-                   + ",AskOpen" 
-                   + ",AskVol"
-                   + ",AskVolOpen"
-                   + ",AskVolChg"
-                   + ",AskVolChgSum"
-                   + ",AskVolChgCnt"
-                   + ",VolAtAsk"
-                   + ",TrdCntAsk "
-                   + ",Mid"
-                   + ",MidOpn"
-                   + ",MidScaled"
-                   + ",MidScaledOpen"
-                   + ",LastPrice"
-                   + ",LastPriceOpn"
-                   + ",LastSize";
+            string output = _securityObj.Name +
+                " " + TimeStamp.ToLongTimeString() + " " +
+                ToStringAllTradesNoIndentity();
+
+            return output.TrimEnd();
         }
 
+        public string ToStringAllTradesNoIndentity()
+        {
+            string output = String.Empty;
+
+            int prcCnt = 0;
+            foreach (var p in TrdsAtPrice.Values)
+            {
+                string cnt = prcCnt.ToString() + " ";
+
+                string priceStr = "Price" + cnt + p.Price.ToString() +
+                    " Vol" + cnt + p.TotalVolume.ToString() +
+                    " VolBid" + cnt + p.VolAtBid.ToString() +
+                    " VolAsk" + cnt + p.VolAtAsk.ToString() +
+                    " Cnt" + cnt + p.TradeCount.ToString() +
+                    " CntBid" + cnt + p.CntAtBid.ToString() +
+                    " CntAsk" + cnt + p.CntAtAsk.ToString();
+
+                output += priceStr + " ";
+
+                prcCnt++;
+            }
+
+            return output.TrimEnd();
+        }
+                
+        // flat file output methods
         public string ToFlatFileStringAllData()
         {
             const string del = ", ";
             string dataStr = _securityObj.Name +
-                             del + TimeStamp.ToLongTimeString() +
+                             del + TimeStamp.ToString("yyyy/MM/dd hh:mm:ss.ffffff") +
                              del + StateType.ToString() +
                              del + Bid.ToString() +
                              del + BidOpen.ToString() +
@@ -499,40 +503,6 @@ namespace DataWrangler
                              del + LastTrdSize.ToString();
 
             return dataStr;
-        }
-        
-        public string ToStringAllTrades()
-        {
-            string output = _securityObj.Name +
-                " " + TimeStamp.ToLongTimeString() + " " +
-                ToStringAllTradesNoIndentity();
-
-            return output.TrimEnd();
-        }
-        
-        public string ToStringAllTradesNoIndentity()
-        {
-            string output = String.Empty;
-
-            int prcCnt = 0;
-            foreach (var p in TrdsAtPrice.Values)
-            {
-                string cnt = prcCnt.ToString() + " ";
-
-                string priceStr = "Price" + cnt + p.Price.ToString() +
-                    " Vol" + cnt + p.TotalVolume.ToString() +
-                    " VolBid" + cnt + p.VolAtBid.ToString() +
-                    " VolAsk" + cnt + p.VolAtAsk.ToString() +
-                    " Cnt" + cnt + p.TradeCount.ToString() +
-                    " CntBid" + cnt + p.CntAtBid.ToString() +
-                    " CntAsk" + cnt + p.CntAtAsk.ToString();
-
-                output += priceStr + " ";
-
-                prcCnt++;
-            }
-
-            return output.TrimEnd();
         }
 
         public string ToFlatFileStringAllTrades(int maxSize)
@@ -564,6 +534,38 @@ namespace DataWrangler
 
             return output.TrimEnd();
 
+        }
+        
+        public string GetHeadersString()
+        {
+            return "Name"
+                   + ",DateTime"
+                   + ",Type"
+                   + ",Bid"
+                   + ",BidOpn"
+                   + ",BidVol"
+                   + ",BidVolOpen"
+                   + ",BidVolChg"
+                   + ",BidVolChgSum"
+                   + ",BidVolChgCnt"
+                   + ",VolAtBid"
+                   + ",TrdCntBid"
+                   + ",Ask"
+                   + ",AskOpen"
+                   + ",AskVol"
+                   + ",AskVolOpen"
+                   + ",AskVolChg"
+                   + ",AskVolChgSum"
+                   + ",AskVolChgCnt"
+                   + ",VolAtAsk"
+                   + ",TrdCntAsk "
+                   + ",Mid"
+                   + ",MidOpn"
+                   + ",MidScaled"
+                   + ",MidScaledOpen"
+                   + ",LastPrice"
+                   + ",LastPriceOpn"
+                   + ",LastSize";
         }
 
         public string GetTradesHeaderString(int maxSize)
