@@ -14,6 +14,18 @@ namespace DataWrangler
 
         public string OutputPath { get; set; }
 
+        private bool _allMktsInitialized = false;
+        public bool AllMktsInitialized { get 
+        { 
+            if (_allMktsInitialized) return true;
+
+            foreach (DataFactory dataFactory in _securitites)
+                if (!dataFactory.MktInitialized) return false;
+
+            _allMktsInitialized = true;
+            return _allMktsInitialized; 
+        } }
+
         // main data repository
         public SortedDictionary<DateTime, Dictionary<Security, SortedDictionary<uint, MarketState>>>
             Markets = new SortedDictionary<DateTime, Dictionary<Security, SortedDictionary<uint, MarketState>>>();
@@ -34,36 +46,37 @@ namespace DataWrangler
 
         public void AddTickData(DataFactory factory, SortedDictionary<uint, MarketState> state, DateTime stateTime)
         {
-
-            if (!Markets.ContainsKey(stateTime))
+            if (AllMktsInitialized)
             {
-                Markets.Add(stateTime, new Dictionary<Security, SortedDictionary<uint, MarketState>>());
-            }
-
-            lock (Markets[stateTime])
-            {
-                Dictionary<Security, SortedDictionary<uint, MarketState>> allMarketsAtTime = Markets[stateTime];
-
-
-                foreach (DataFactory f in _securitites)
+                if (!Markets.ContainsKey(stateTime))
                 {
-                    // no market data for this security, for this time stamp exists
-                    if (!allMarketsAtTime.ContainsKey(f.SecurityObj))
-                    {
-                        SortedDictionary<uint, MarketState> mktData = factory.Equals(f) ? state : f.GetCurrentOrBefore(stateTime);
-                        allMarketsAtTime.Add(f.SecurityObj, mktData);
-                    }
-                    else // market data for this security, for this time stamp exists already
-                    {
-                        if (factory.Equals(f))
-                        {
-                            allMarketsAtTime[f.SecurityObj] = state;
-                        }
-                    }
+                    Markets.Add(stateTime, new Dictionary<Security, SortedDictionary<uint, MarketState>>());
                 }
 
-                if (_lastState < stateTime) _lastState = stateTime;
+                lock (Markets[stateTime])
+                {
+                    Dictionary<Security, SortedDictionary<uint, MarketState>> allMarketsAtTime = Markets[stateTime];
 
+                    foreach (DataFactory f in _securitites)
+                    {
+                        // no market data for this security, for this time stamp exists
+                        if (!allMarketsAtTime.ContainsKey(f.SecurityObj))
+                        {
+                            SortedDictionary<uint, MarketState> mktData = factory.Equals(f) ? state : f.GetLatestOrBefore(stateTime);
+                            allMarketsAtTime.Add(f.SecurityObj, mktData);
+                        }
+                        else // market data for this security, for this time stamp exists already
+                        {
+                            if (factory.Equals(f))
+                            {
+                                allMarketsAtTime[f.SecurityObj] = state;
+                            }
+                        }
+                    }
+
+                    if (_lastState < stateTime) _lastState = stateTime;
+
+                }
             }
         }
 
@@ -126,7 +139,10 @@ namespace DataWrangler
                     date = current;
                     fileName.Clear();
                     fileName.Append(filePath);
-                    fileName.Append(date.Year.ToString() + date.Month.ToString("00") + date.Day.ToString("00") + ".csv");
+                    fileName.Append(date.Year.ToString());
+                    fileName.Append(date.Month.ToString("00"));
+                    fileName.Append(date.Day.ToString("00"));
+                    fileName.Append(".csv");
                     Console.WriteLine(fileName.ToString());
 
                 }
@@ -139,7 +155,7 @@ namespace DataWrangler
                 }
 
                 dataCache.Add(data.ToString());
-                Console.WriteLine(data.ToString());
+                //Console.WriteLine(data.ToString());
             }
 
             if (dataCache.Count > 0)
@@ -151,7 +167,6 @@ namespace DataWrangler
             System.IO.File.WriteAllLines(path, dataCache);
             dataCache.Clear();
         }
-
 
         private string MarketStateToString(MarketState lastTick)
         {

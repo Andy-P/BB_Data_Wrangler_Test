@@ -298,10 +298,14 @@ namespace DataWrangler
                         }
                     }
 
-                    foreach (TickData tickData in security.Value)
+                    // begin play back only after we have a summary event for each security
+                    if (_mktSummaryEvents.Count < 1)
                     {
-                        factory.NewTick(tickData);
-                    } 
+                        foreach (TickData tickData in security.Value)
+                        {
+                            factory.NewTick(tickData);
+                        }
+                    }
                 }                                
             }
         }

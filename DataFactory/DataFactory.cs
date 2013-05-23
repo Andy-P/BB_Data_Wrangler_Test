@@ -10,25 +10,30 @@ namespace DataWrangler
     {
         private readonly string _security = String.Empty;
         private readonly Security _securityObj;
-        private DateTime _lastUpdate = DateTime.MinValue;
-        private DateTime _currentIntervalDt;
         private MarketAggregator _markets;
 
         // read only properties
         public string Security { get { return _security; } }
         public uint SecurityId { get; private set; }
         public Security SecurityObj { get { return _securityObj; } }
-        public DateTime LastUpdate { get { return _lastUpdate; } }
-        public DateTime CurrentIntervalDt { get { return _currentIntervalDt; } }
-        public MarketState CurrentInterval { get { return GetCurrentState(); } }
+        public DateTime CurrentIntervalDt
+        {
+            get
+            {
+                DateTime currentIntervalDt = DateTime.MinValue;
+                if (_marketData.Count > 0)
+                    currentIntervalDt = _marketData.ElementAt(_marketData.Count - 1).Key;
+
+                return currentIntervalDt;
+            }
+        }
+        public MarketState CurrentInterval { get { return GetLatestState(); } }
         public DataRow CurrentBarDataRow { get { return GetCurrentBarAsDataRow(); } }
+        public bool MktInitialized { get { return _mktInitialized; } }
 
         bool _mktInitialized;
 
         public bool LogEachTick = false;
-
-        // index tracking latest value in time bin
-        private readonly Dictionary<DateTime, uint> _marketDataLastest = new Dictionary<DateTime, uint>();
 
         // Main data repository
         private readonly SortedDictionary<DateTime, SortedDictionary<uint, MarketState>> _marketData
@@ -118,17 +123,11 @@ namespace DataWrangler
 
                 lock (_marketData[timeBin])
                 {
-
                     // initialize the market
                     var newState = new MarketState(_securityObj, bid, ask, trade);
 
                     // Add the new state to its time bin
                     _marketData[newState.TimeStamp].Add(newState.BinCnt, newState);
-
-                    // log the latest market state
-                    _currentIntervalDt = timeBin;
-                    _marketDataLastest[newState.TimeStamp] = newState.BinCnt;
-                    _lastUpdate = timeBin;
 
                     _markets.AddTickData(this, _marketData[newState.TimeStamp], newState.TimeStamp);
                 }
@@ -137,58 +136,77 @@ namespace DataWrangler
 
         public void NewTick(TickData newData)
         {
-            // get the current market state
-            SortedDictionary<uint, MarketState> currentTimeBin = _marketData[_currentIntervalDt];
-            MarketState currentState = currentTimeBin[currentTimeBin.Keys.Max()];
+            DateTime currTimeBinTimeStamp = getCurrentInterval(newData.TimeStamp);
 
-            // disregard duplicates
-            if (!Duplicate(newData, currentState))
+            if (currTimeBinTimeStamp > DateTime.MinValue) // check to make sure the initialzation has happend
             {
-                if (!_marketData.ContainsKey(newData.TimeStamp))
+                // get the current market state
+                SortedDictionary<uint, MarketState> currTimeBin = _marketData[currTimeBinTimeStamp];
+                MarketState currentState = currTimeBin.ElementAt(currTimeBin.Count - 1).Value; // last data point in time bin
+
+                // disregard duplicates
+                if (!DuplicateOfPrevDataPoint(newData, currentState))
                 {
-                    _marketData.Add(newData.TimeStamp, new SortedDictionary<uint, MarketState>());
-                }
-                
-                DateTime newTimeStamp = DateTime.MinValue;
-                lock (_marketData[newData.TimeStamp])
-                {
-                    // create a new updated market state
-                    var newState = new MarketState(_securityObj, currentState, newData);
-
-                    if (!_marketDataLastest.ContainsKey(newState.TimeStamp))
+                    bool addedNewTimeStamp = false;
+                    if (!_marketData.ContainsKey(newData.TimeStamp))
                     {
-                        _marketDataLastest.Add(newState.TimeStamp, 0);
-                        _currentIntervalDt = newState.TimeStamp;
-                        newTimeStamp = _currentIntervalDt;
-                    }
-                    else
-                    {
-                        _marketDataLastest[newState.TimeStamp]++;
-                        newState.BinCnt = _marketDataLastest[newState.TimeStamp];
+                        _marketData.Add(newData.TimeStamp, new SortedDictionary<uint, MarketState>());
+                        addedNewTimeStamp = true;
                     }
 
-                    // Add the new state to its time bin
-                    _marketData[newState.TimeStamp].Add(newState.BinCnt, newState);
-
-                    if (LogEachTick)
+                    var marketDataForTimeStamp = _marketData[newData.TimeStamp];
+                    lock (marketDataForTimeStamp)
                     {
-                        string output = newState.ToStringAllData();
-                        if (newState.StateType == MktStateType.Trade) output += " " + newState.ToStringAllTradesNoIndentity();
-                        Console.WriteLine(output);
+                        // create a new updated market state
+                        var newState = new MarketState(_securityObj, currentState, newData);
+
+                        newState.BinCnt = (uint) marketDataForTimeStamp.Count;
+                        marketDataForTimeStamp.Add(newState.BinCnt, newState);
+
+                        if (LogEachTick)
+                        {
+                            string output = newState.ToStringAllData();
+                            if (newState.StateType == MktStateType.Trade) output += " " + newState.ToStringAllTradesNoIndentity();
+                            Console.WriteLine(output);
+                        }
+
                     }
+
+                    // let the market aggregator know there is a new timestamp to aggregate
+                    if (addedNewTimeStamp)
+                        _markets.AddTickData(this, _marketData[newData.TimeStamp], newData.TimeStamp);
 
                 }
-
-                _lastUpdate = newData.TimeStamp > _lastUpdate ? newData.TimeStamp : _lastUpdate;
-
-                // let the market aggregator know there is a new timestamp to aggregate
-                if (newTimeStamp != DateTime.MinValue)
-                    _markets.AddTickData(this, _marketData[newTimeStamp], newTimeStamp);
-
             }
         }
 
-        private bool Duplicate(TickData newData, MarketState current)
+        private DateTime getCurrentInterval(DateTime dataTimeStamp)
+        {
+            // latest timeStamp in collection
+            DateTime maxTimeStamp = _marketData.ElementAt(_marketData.Count - 1).Key;
+
+            // use this timeStamp unless the dateTime of data is before max dateTime
+            if (maxTimeStamp <= dataTimeStamp)
+                return maxTimeStamp;
+
+            // if dateTime of data is before the max dateTime, use that time stamp if it exists
+            if (_marketData.ContainsKey(dataTimeStamp))
+                return dataTimeStamp;
+
+            // if dateTime of data doesn't exist, use the most recent on before it
+            for (int i = _marketData.Count - 1; i >= 0; i--)
+            {
+                if (_marketData.ElementAt(i).Key <= dataTimeStamp)
+                {
+                    return _marketData.ElementAt(i).Key;
+                }
+            }
+
+            // if there is no data at all
+            return DateTime.MinValue;
+        }
+
+        private bool DuplicateOfPrevDataPoint(TickData newData, MarketState current)
         {
             double currPrice = 0;
             bool hasSizeData = false;
@@ -209,37 +227,68 @@ namespace DataWrangler
                     break;
             }
 
-            return (!hasSizeData) && Math.Abs(newData.Price - currPrice) < Double.Epsilon;
+            // if it doesn't have size data and the price hasn't changed flag it as as duplicate
+            return ((!hasSizeData) && (Math.Abs(newData.Price - currPrice) < Double.Epsilon));
         }
 
-        private MarketState GetCurrentState()
+        private MarketState GetLatestState()
         {
-            SortedDictionary<uint, MarketState> lastestBin = _marketData[_currentIntervalDt];
-            return lastestBin[lastestBin.Keys.Max()];
-
-        }
-
-        public SortedDictionary<uint, MarketState> GetCurrentOrBefore(DateTime timestamp)
-        {
-            // get the data from the same time stamp,
-            // or if that does not exist, the closest previous time stamp
-            if (_marketData.ContainsKey(timestamp))
-            {
-                return _marketData[timestamp];
+            MarketState currentState = null;
+            if (_marketData.Count > 0) // check to make sure we have some data
+            {  
+                // get the current market state
+                SortedDictionary<uint, MarketState> currTimeBin = _marketData.ElementAt(_marketData.Count - 1).Value;
+                currentState = currTimeBin.ElementAt(currTimeBin.Count - 1).Value; 
             }
 
-            int responseIndex = 0;
-            for (int i = _marketData.Count - 1; i >= 0; i--)
+            return currentState;
+
+        }
+
+        public SortedDictionary<uint, MarketState> GetLatestOrBefore(DateTime timeStamp)
+        {
+            if (_marketData.Count == 0) return null;
+ 
+            // get the data from the same time stamp,
+            if (_marketData.ContainsKey(timeStamp))
             {
-                if (_marketData.ElementAt(i).Key <= timestamp)
+                return _marketData[timeStamp];
+            }
+
+            // or if that does not exist, the closest previous time stamp
+            DateTime currTimeBinsTimeStamp = getCurrentInterval(timeStamp);
+            return DuplicateTick(_marketData[currTimeBinsTimeStamp], timeStamp);
+        }
+
+        public SortedDictionary<uint, MarketState> DuplicateTick(SortedDictionary<uint, MarketState> mostRecentState, DateTime timestamp)
+        {
+            // create a new time stamp if it doesn't exist (Only exist if there is a race condition)
+            if (!_marketData.ContainsKey(timestamp))
+                _marketData.Add(timestamp, new SortedDictionary<uint, MarketState>());
+            
+            var marketDataForTimeStamp = _marketData[timestamp];
+            lock (marketDataForTimeStamp)
+            {                
+                DateTime newTimeStamp = DateTime.MinValue;
+
+                var prevState = mostRecentState[(uint)mostRecentState.Count - 1];
+                var newState = new MarketState(_securityObj, prevState, timestamp);
+                SortedDictionary<uint, MarketState> timeBin = _marketData[timestamp];
+
+                newState.BinCnt = (uint)marketDataForTimeStamp.Count;
+                marketDataForTimeStamp.Add(newState.BinCnt, newState);
+
+                if (LogEachTick)
                 {
-                    responseIndex = i;
-                    break;
+                    string output = newState.ToStringAllData();
+                    if (newState.StateType == MktStateType.Trade) output += " " + newState.ToStringAllTradesNoIndentity();
+                    Console.WriteLine(output);
                 }
             }
 
-            return _marketData.Count == 0 ? null : _marketData.ElementAt(responseIndex).Value;
+            return _marketData[timestamp];
         }
+
 
         private static DataRow GetCurrentBarAsDataRow()
         {

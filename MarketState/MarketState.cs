@@ -5,7 +5,7 @@ using System.Text;
 namespace DataWrangler
 {
     // Data container: Holds processed tick data and analytics
-    public enum MktStateType { Summary = -1, Trade = 0, Ask = 1, Bid = 2 }
+    public enum MktStateType { Trade = 0, Ask = 1, Bid = 2, Summary = -1, Duplicate = -2}
     
     public class MarketState
     {
@@ -62,7 +62,7 @@ namespace DataWrangler
         public double OrderFlowTdy { get; private set; }
         public double VolumeTdy { get; private set; }
 
-        private uint _binCnt;
+        private uint _binCnt = 0;
         public uint BinCnt
         {
             get { return _binCnt; }
@@ -78,6 +78,17 @@ namespace DataWrangler
         // constructor used on very first event to initialize market state
         public MarketState(Security security, TickData bid, TickData ask, TickData trade)
         {
+
+            if (security == null)
+                throw new ArgumentException("security object must not be null", "security");
+
+            if (bid == null)
+                throw new ArgumentException("TickData object for bid object must not be null", "bid");
+            if (ask == null)
+                throw new ArgumentException("TickData object for ask object must not be null", "ask");
+            if (trade == null)
+                throw new ArgumentException("TickData object for trade object must not be null", "bid");
+
             VolumeTdy = 0;
             OrderFlowTdy = 0;
             VolAtBidTdy = 0;
@@ -103,7 +114,6 @@ namespace DataWrangler
         // constructor used for each successive data event after the initial event
         public MarketState(Security security, MarketState previousMktState, TickData tickData) 
         {
-            TimeStamp = DateTime.MinValue;
             VolumeTdy = 0;
             OrderFlowTdy = 0;
             VolAtBidTdy = 0;
@@ -113,8 +123,12 @@ namespace DataWrangler
             if (previousMktState == null)
                 throw new ArgumentException("Previous MarketState object must not be null", "previousMktState");
 
+            if (tickData.TimeStamp == null)
+                throw new ArgumentException("tickData.TimeStamp must not be null", "tickData.TimeStamp");
+
             TimeStamp = tickData.TimeStamp;
-            FirstOfInterval = (tickData.TimeStamp.Subtract(previousMktState.TimeStamp).TotalSeconds != 0);
+
+            FirstOfInterval = (tickData.TimeStamp.Subtract(previousMktState.TimeStamp).TotalSeconds > 0);
 
             CopyPrevState(previousMktState, FirstOfInterval);
 
@@ -175,6 +189,31 @@ namespace DataWrangler
             }
         }
 
+        // constructor used to create a duplicate a state sing  a new timestamp
+        public MarketState(Security security, MarketState previousMktState, DateTime timeStamp)
+        {
+            TimeStamp = DateTime.MinValue;
+            VolumeTdy = 0;
+            OrderFlowTdy = 0;
+            VolAtBidTdy = 0;
+            VolAtAskTdy = 0;
+            _securityObj = security;
+
+            if (security == null)
+                throw new ArgumentException("security object must not be null", "security");
+
+            if (previousMktState == null)
+                throw new ArgumentException("Previous MarketState object must not be null", "previousMktState");
+
+            if (timeStamp == null)
+                throw new ArgumentException("timeStamp must not be null", "timeStamp");
+
+            TimeStamp = timeStamp;
+            FirstOfInterval = true;
+            CopyPrevState(previousMktState, FirstOfInterval);
+            StateType = MktStateType.Duplicate;       
+        }
+
         private void CopyPrevState(MarketState previous, bool isFirstOfInterval)
         {
             Bid = previous.Bid;
@@ -209,6 +248,7 @@ namespace DataWrangler
                 AskVolChgSum = previous.AskVolChgSum;
                 AskVolChgCnt = previous.AskVolChgCnt;
                 TrdsAtPrice = previous.TrdsAtPrice;
+                //BinCnt++;
             }
             else
             {
@@ -259,6 +299,16 @@ namespace DataWrangler
                             BidVolChgSum += BidVolChg;
                             SetBidVolChgCnt(BidVolChg);
                             //Console.WriteLine(SecurityObj.Name + " went Bid @" + timeStamp.ToLongTimeString());
+                        }
+                        else
+                        {
+                            if ((Bid < PrevBid)) // just ticked down
+                            {
+                                BidVolChg = (int)(PrevBidVol);
+                                BidVolChgSum -= BidVolChg;
+                                SetBidVolChgCnt(BidVolChg);
+                                Console.WriteLine("{0} went offered @ {1} {2} {3} {4}", Name, TimeStamp.ToLongTimeString(),Bid.ToString(), PrevBid.ToString(), BidVolChg.ToString());
+                            }
                         }
                     }
                 }
@@ -473,121 +523,124 @@ namespace DataWrangler
         public string ToFlatFileStringAllData()
         {
             const string del = ", ";
-            string dataStr = _securityObj.Name +
-                             del + TimeStamp.ToString("yyyy/MM/dd hh:mm:ss.ffffff") +
-                             del + StateType.ToString() +
-                             del + Bid.ToString() +
-                             del + BidOpen.ToString() +
-                             del + BidVol.ToString() +
-                             del + BidVolOpen.ToString() +
-                             del + BidVolChg.ToString() +
-                             del + BidVolChgSum.ToString() +
-                             del + BidVolChgCnt.ToString() +
-                             del + VolAtBid.ToString() +
-                             del + TrdCntBid.ToString() +
-                             del + Ask.ToString() +
-                             del + AskOpen.ToString() +
-                             del + AskVol.ToString() +
-                             del + AskVolOpen.ToString() +
-                             del + AskVolChg.ToString() +
-                             del + AskVolChgSum.ToString() +
-                             del + AskVolChgCnt.ToString() +
-                             del + VolAtAsk.ToString() +
-                             del + TrdCntAsk.ToString() +
-                             del + Mid.ToString() +
-                             del + MidOpen.ToString() +
-                             del + MidScaled.ToString("#.0000") +
-                             del + MidScaledOpen.ToString("#.0000") +
-                             del + LastTrdPrice.ToString() +
-                             del + LastPriceOpn.ToString() +
-                             del + LastTrdSize.ToString();
+            StringBuilder dataStr = new StringBuilder();
 
-            return dataStr;
+            // output string 
+            dataStr.Append(_securityObj.Name);
+            dataStr.Append(del); dataStr.Append(TimeStamp.ToString("yyyy/MM/dd hh:mm:ss.ffffff"));
+            dataStr.Append(del); dataStr.Append(StateType.ToString());
+            dataStr.Append(del); dataStr.Append(Bid.ToString());
+            dataStr.Append(del); dataStr.Append(BidVol.ToString());
+            dataStr.Append(del); dataStr.Append(BidOpen.ToString());
+            dataStr.Append(del); dataStr.Append(BidVolOpen.ToString());
+            dataStr.Append(del); dataStr.Append(BidVolChg.ToString());
+            dataStr.Append(del); dataStr.Append(BidVolChgSum.ToString());
+            dataStr.Append(del); dataStr.Append(BidVolChgCnt.ToString());
+            dataStr.Append(del); dataStr.Append(VolAtBid.ToString());
+            dataStr.Append(del); dataStr.Append(TrdCntBid.ToString());
+            dataStr.Append(del); dataStr.Append(Ask.ToString());
+            dataStr.Append(del); dataStr.Append(AskVol.ToString());
+            dataStr.Append(del); dataStr.Append(AskOpen.ToString());
+            dataStr.Append(del); dataStr.Append(AskVolOpen.ToString());
+            dataStr.Append(del); dataStr.Append(AskVolChg.ToString());
+            dataStr.Append(del); dataStr.Append(AskVolChgSum.ToString());
+            dataStr.Append(del); dataStr.Append(AskVolChgCnt.ToString());
+            dataStr.Append(del); dataStr.Append(VolAtAsk.ToString());
+            dataStr.Append(del); dataStr.Append(TrdCntAsk.ToString());
+            dataStr.Append(del); dataStr.Append(Mid.ToString());
+            dataStr.Append(del); dataStr.Append(MidOpen.ToString());
+            dataStr.Append(del); dataStr.Append(MidScaled.ToString("#.0000"));
+            dataStr.Append(del); dataStr.Append(MidScaledOpen.ToString("#.0000"));
+            dataStr.Append(del); dataStr.Append(LastTrdPrice.ToString());
+            dataStr.Append(del); dataStr.Append(LastPriceOpn.ToString());
+            dataStr.Append(del); dataStr.Append(LastTrdSize.ToString());
+
+            return dataStr.ToString();
         }
 
         public string ToFlatFileStringAllTrades(int maxSize)
         {
-            const string del = ",";
-            string output = String.Empty;
+            StringBuilder dataStr = new StringBuilder();
 
+            const string del = ",";
             int prcCnt = 0;
             foreach (var p in TrdsAtPrice.Values)
             {
-                string priceStr = del + p.Price.ToString() +
-                                  del + p.TotalVolume.ToString() +
-                                  del + p.VolAtBid.ToString() +
-                                  del + p.VolAtAsk.ToString() +
-                                  del + p.TradeCount.ToString() +
-                                  del + p.CntAtBid.ToString() +
-                                  del + p.CntAtAsk.ToString();
-
-                output += priceStr;
+                dataStr.Append(del); dataStr.Append(p.Price.ToString());
+                dataStr.Append(del); dataStr.Append(p.TotalVolume.ToString());
+                dataStr.Append(del); dataStr.Append(p.VolAtBid.ToString());
+                dataStr.Append(del); dataStr.Append(p.VolAtAsk.ToString());
+                dataStr.Append(del); dataStr.Append(p.TradeCount.ToString());
+                dataStr.Append(del); dataStr.Append(p.CntAtBid.ToString());
+                dataStr.Append(del); dataStr.Append(p.CntAtAsk.ToString());
 
                 prcCnt++;
                 if (prcCnt >= maxSize) break;
             }
-             
+
             for (int i = prcCnt; i < maxSize; i++)
             {
-                output += "0,0,0,0,0,0,0,0";
+                dataStr.Append(",0,0,0,0,0,0,0");
             }
 
-            return output.TrimEnd();
+            return dataStr.ToString().TrimEnd();
 
         }
-        
+
         public string GetHeadersString()
         {
-            return "Name"
-                   + ",DateTime"
-                   + ",Type"
-                   + ",Bid"
-                   + ",BidOpn"
-                   + ",BidVol"
-                   + ",BidVolOpen"
-                   + ",BidVolChg"
-                   + ",BidVolChgSum"
-                   + ",BidVolChgCnt"
-                   + ",VolAtBid"
-                   + ",TrdCntBid"
-                   + ",Ask"
-                   + ",AskOpen"
-                   + ",AskVol"
-                   + ",AskVolOpen"
-                   + ",AskVolChg"
-                   + ",AskVolChgSum"
-                   + ",AskVolChgCnt"
-                   + ",VolAtAsk"
-                   + ",TrdCntAsk "
-                   + ",Mid"
-                   + ",MidOpn"
-                   + ",MidScaled"
-                   + ",MidScaledOpen"
-                   + ",LastPrice"
-                   + ",LastPriceOpn"
-                   + ",LastSize";
+            StringBuilder headerStr = new StringBuilder();
+            headerStr.Append("Name");
+            headerStr.Append(",DateTime");
+            headerStr.Append(",Type");
+            headerStr.Append(",Bid");
+            headerStr.Append(",BidVol");
+            headerStr.Append(",BidOpn");
+            headerStr.Append(",BidVolOpen");
+            headerStr.Append(",BidVolChg");
+            headerStr.Append(",BidVolChgSum");
+            headerStr.Append(",BidVolChgCnt");
+            headerStr.Append(",VolAtBid");
+            headerStr.Append(",TrdCntBid");
+            headerStr.Append(",Ask");
+            headerStr.Append(",AskVol");
+            headerStr.Append(",AskOpen");
+            headerStr.Append(",AskVolOpen");
+            headerStr.Append(",AskVolChg");
+            headerStr.Append(",AskVolChgSum");
+            headerStr.Append(",AskVolChgCnt");
+            headerStr.Append(",VolAtAsk");
+            headerStr.Append(",TrdCntAsk ");
+            headerStr.Append(",Mid");
+            headerStr.Append(",MidOpn");
+            headerStr.Append(",MidScaled");
+            headerStr.Append(",MidScaledOpen");
+            headerStr.Append(",LastPrice");
+            headerStr.Append(",LastPriceOpn");
+            headerStr.Append(",LastSize");
+
+            return headerStr.ToString();
         }
 
         public string GetTradesHeaderString(int maxSize)
         {
 
             const string del = ",";
-            string output = ",";
 
+            StringBuilder headerStr = new StringBuilder();
+            headerStr.Append(del);
             for (int i = 0; i < maxSize; i++)
             {
-                string header = "Price" + i + del +
-                                " Vol" + i + del +
-                                " VolBid" + i + del +
-                                " VolAsk" + i + del +
-                                " Cnt" + i + del +
-                                " CntBid" + i + del +
-                                " CntAsk" + i + del;
-
-                output += header;
+                headerStr.Append("Price"); headerStr.Append(i.ToString()); headerStr.Append(del);
+                headerStr.Append("Vol"); headerStr.Append(i.ToString()); headerStr.Append(del);
+                headerStr.Append("VolBid"); headerStr.Append(i.ToString()); headerStr.Append(del);
+                headerStr.Append("VolAsk"); headerStr.Append(i.ToString()); headerStr.Append(del);
+                headerStr.Append("Cnt"); headerStr.Append(i.ToString()); headerStr.Append(del);
+                headerStr.Append("CntBid"); headerStr.Append(i.ToString()); headerStr.Append(del);
+                headerStr.Append("CntAsk"); headerStr.Append(i.ToString()); headerStr.Append(del);
             }
 
-            return output;
+            return headerStr.ToString();
         }
 
         public class TradesAtPrice
