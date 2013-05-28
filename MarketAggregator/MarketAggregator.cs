@@ -9,8 +9,11 @@ namespace DataWrangler
         public enum Mode { RealTime = 1, Historical = 0 }
         public Mode InputMode { get; set; }
 
-        public enum OutPutMode { FlatFile, Xml, Binary, SqlTable }
-        public OutPutMode ExportMode { get; set; }
+        public enum OutPutType { FlatFile, Xml, Binary, SqlTable }
+
+        public enum OutPutMktMode { SeperateMkts, AggregatedMkts, BothMkts }
+
+        public OutPutType ExportMode { get; set; }
 
         public string OutputPath { get; set; }
 
@@ -80,86 +83,164 @@ namespace DataWrangler
             }
         }
 
-        public void BatchWriteOutData(OutPutMode outPutMode)
+        public void BatchWriteOutData(OutPutType outPutMode)
         {
-            BatchWriteOutData(outPutMode, String.Empty, 0);
+            BatchWriteOutData(outPutMode, OutPutMktMode.AggregatedMkts, String.Empty, 0);
         }
 
-        public void BatchWriteOutData(OutPutMode outPutMode, string filePath, int cutOffHour)
+        public void BatchWriteOutData(OutPutType outPutMode, OutPutMktMode mktMode, string filePath, int cutOffHour)
         {
             switch (outPutMode)
             {
-                case OutPutMode.FlatFile:
-                    WriteOutFlatFile(filePath, cutOffHour);
+                case OutPutType.FlatFile:
+                    WriteOutFlatFile(mktMode, filePath, cutOffHour);
                     break;
-                case OutPutMode.Xml:
+                case OutPutType.Xml:
                     break;
-                case OutPutMode.Binary:
+                case OutPutType.Binary:
                     break;
-                case OutPutMode.SqlTable:
+                case OutPutType.SqlTable:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException("outPutMode");
             }
         }
 
-        private void WriteOutFlatFile(string filePath, int cutOffHour)
+        private void WriteOutFlatFile(OutPutMktMode mktMode, string filePath, int cutOffHour)
         {
-            bool headerWritten = false;
+            bool headerCreated = false;
+
+            Dictionary<Security, MktOutput> MktsOutPut = new Dictionary<Security, MktOutput>();
+
+            foreach (var dataFactory in _securitites)
+            {
+                MktsOutPut.Add(dataFactory.SecurityObj, new MktOutput()
+                {
+                    basePath = filePath,
+                    baseExtension = ".csv",
+                    security = dataFactory.SecurityObj
+                });
+            }
 
             DateTime date = DateTime.MinValue;
-            List<string> dataCache = new List<string>();
+            List<string> dataCacheAll = new List<string>();
+            Dictionary<Security, string> dataCacheByMkt = new Dictionary<Security, string>();
             StringBuilder fileName = new StringBuilder();
-            StringBuilder header = new StringBuilder();
-            
+            StringBuilder allMktsHeader = new StringBuilder();
+
             foreach (var timeStamp in Markets)
             {
                 // calculate the header using the tickdata's built-in funnction
-                if (!headerWritten)
+                if (!headerCreated)
                 {
                     foreach (var security in timeStamp.Value)
                     {
-                        MarketState lastTick = security.Value[0];
-                        header.Append(lastTick.GetHeadersString() + lastTick.GetTradesHeaderString(5));
+                        MarketState marketState = security.Value[0];
+                        string mktHeaderString = marketState.GetHeadersString() + marketState.GetTradesHeaderString(5);
+                        allMktsHeader.Append(mktHeaderString);
+                        MktsOutPut[security.Key].header = mktHeaderString;
                     }
 
-                    Console.WriteLine(header.ToString());
-                    headerWritten = true;
+                    Console.WriteLine(allMktsHeader.ToString());
+                    dataCacheAll.Add(allMktsHeader.ToString());
+                    headerCreated = true;
                 }
 
-
-                // Output a new file for each day. The end of each day is defined by a cutOffHour
-                DateTime current = timeStamp.Key;
-                if (date == DateTime.MinValue || ((current.Day != date.Day) && (current.Hour >= cutOffHour)))
-                {
-                    if (dataCache.Count > 0)
-                        writeCacheToFile(fileName.ToString(), dataCache);
-                    dataCache.Add(header.ToString());
-
-                    date = current;
-                    fileName.Clear();
-                    fileName.Append(filePath);
-                    fileName.Append(date.Year.ToString());
-                    fileName.Append(date.Month.ToString("00"));
-                    fileName.Append(date.Day.ToString("00"));
-                    fileName.Append(".csv");
-                    Console.WriteLine(fileName.ToString());
-
-                }
-                
                 StringBuilder data = new StringBuilder();
+                bool resetDate = false;
                 foreach (var security in timeStamp.Value)
                 {
-                    MarketState lastTick = security.Value[(uint)(security.Value.Count - 1)];
-                    data.Append(MarketStateToString(lastTick) + ",");
+                    MktOutput mktOutPut = MktsOutPut[security.Key];
+
+                    // Output a new file for each day. The end of each day is defined by a cutOffHour
+                    DateTime current = timeStamp.Key;
+                    if (date == DateTime.MinValue || ((current.Day != date.Day) && (current.Hour >= cutOffHour)))
+                    {
+                        if (resetDate == false)
+                        {
+                            resetDate = true;
+                            if (mktMode == OutPutMktMode.AggregatedMkts)
+                                if (dataCacheAll.Count > 0)
+                                {
+                                    writeCacheToFile(fileName.ToString(), dataCacheAll);
+                                    dataCacheAll.Add(allMktsHeader.ToString());
+                                }
+                        }
+
+                        if ((mktMode == OutPutMktMode.SeperateMkts) || (mktMode == OutPutMktMode.BothMkts))
+                        {
+                            // output each of the individual markets data
+                            if (mktOutPut.dataCache.Count > 0)
+                                writeCacheToFile(mktOutPut.filePath.ToString(), mktOutPut.dataCache);
+                        }
+
+
+                        // construct the new file name
+                        fileName.Clear();
+                        fileName.Append(filePath);
+
+                        string dateStr = current.Year.ToString() +
+                            current.Month.ToString("00") +
+                            current.Day.ToString("00");
+
+                        switch (mktMode)
+                        {
+                            case OutPutMktMode.SeperateMkts:
+                                mktOutPut.setFilePath(dateStr);
+                                break;
+                            case OutPutMktMode.BothMkts:
+                                mktOutPut.setFilePath(dateStr);
+                                fileName.Append("All_Mkts_");
+                                break;
+                            case OutPutMktMode.AggregatedMkts:
+                            default:
+                                fileName.Append("All_Mkts_");
+                                break;
+                        }
+
+                        fileName.Append(dateStr);
+                        fileName.Append(".csv");
+                    }
+
+                    if ((mktMode == OutPutMktMode.AggregatedMkts) || (mktMode == OutPutMktMode.BothMkts))
+                    {
+                        MarketState lastTick = security.Value[(uint)(security.Value.Count - 1)];
+                        data.Append(MarketStateToString(lastTick) + ",");
+                    }
+                    else
+                    {
+                        foreach (var mktStates in security.Value)
+                        {
+                            mktOutPut.dataCache.Add(MarketStateToString(mktStates.Value) + ",");
+                        }
+                    }
                 }
 
-                dataCache.Add(data.ToString());
-                //Console.WriteLine(data.ToString());
+                if (resetDate) date = timeStamp.Key; // reset the date if we moved passed the cut off for a new day
+
+                if ((mktMode == OutPutMktMode.AggregatedMkts) || (mktMode == OutPutMktMode.BothMkts))
+                {
+                    dataCacheAll.Add(data.ToString());
+                }
             }
 
-            if (dataCache.Count > 0)
-                writeCacheToFile(fileName.ToString(), dataCache);
+
+            if ((mktMode == OutPutMktMode.AggregatedMkts) || (mktMode == OutPutMktMode.BothMkts))
+            {
+                if (dataCacheAll.Count > 0)
+                    writeCacheToFile(fileName.ToString(), dataCacheAll);
+            }
+
+
+            if ((mktMode == OutPutMktMode.SeperateMkts) || (mktMode == OutPutMktMode.BothMkts))
+            {
+                // output each of the individual markets final data set
+                foreach (var mktOutPut in MktsOutPut.Values)
+                {
+                    if (mktOutPut.dataCache.Count > 0)
+                        writeCacheToFile(mktOutPut.filePath.ToString(), mktOutPut.dataCache);
+                }
+            }
         }
 
         private void writeCacheToFile(string path, List<string> dataCache)
@@ -175,6 +256,25 @@ namespace DataWrangler
             return output;
         }
 
+        protected class MktOutput
+        {
+            public string basePath;
+            public string baseExtension;
+            public Security security;
+            public StringBuilder filePath = new StringBuilder();
+            public string header;
+            public List<string> dataCache = new List<string>();
 
+            public void setFilePath(string fileTimeStamp)
+            {
+                filePath.Clear();
+                filePath.Append(basePath);
+                filePath.Append(security.Name);
+                filePath.Append("_");
+                filePath.Append(fileTimeStamp);
+                filePath.Append(baseExtension);
+            }
+
+        }
     }
 }

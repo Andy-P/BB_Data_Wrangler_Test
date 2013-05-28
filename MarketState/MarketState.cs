@@ -75,7 +75,7 @@ namespace DataWrangler
 
         #endregion
 
-        // constructor used on very first event to initialize market state
+        // constructor used on very first event to initialize market state (market summary event)
         public MarketState(Security security, TickData bid, TickData ask, TickData trade)
         {
 
@@ -111,7 +111,7 @@ namespace DataWrangler
             SetMidOpen();
         }
 
-        // constructor used for each successive data event after the initial event
+        // constructor used for each successive data event after the initial market summary event
         public MarketState(Security security, MarketState previousMktState, TickData tickData) 
         {
             VolumeTdy = 0;
@@ -189,7 +189,7 @@ namespace DataWrangler
             }
         }
 
-        // constructor used to create a duplicate a state sing  a new timestamp
+        // constructor used to create a duplicate a state using a new timestamp
         public MarketState(Security security, MarketState previousMktState, DateTime timeStamp)
         {
             TimeStamp = DateTime.MinValue;
@@ -528,6 +528,7 @@ namespace DataWrangler
             // output string 
             dataStr.Append(_securityObj.Name);
             dataStr.Append(del); dataStr.Append(TimeStamp.ToString("yyyy/MM/dd hh:mm:ss.ffffff"));
+            dataStr.Append(del); dataStr.Append(BinCnt.ToString());
             dataStr.Append(del); dataStr.Append(StateType.ToString());
             dataStr.Append(del); dataStr.Append(Bid.ToString());
             dataStr.Append(del); dataStr.Append(BidVol.ToString());
@@ -592,6 +593,7 @@ namespace DataWrangler
             StringBuilder headerStr = new StringBuilder();
             headerStr.Append("Name");
             headerStr.Append(",DateTime");
+            headerStr.Append(",BinCnt");
             headerStr.Append(",Type");
             headerStr.Append(",Bid");
             headerStr.Append(",BidVol");

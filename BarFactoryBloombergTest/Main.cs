@@ -30,9 +30,9 @@ namespace BarFactoryBloombergTest
             _histFeed = new HistoricalDataHandler(dsPath);
             _markets = new MarketAggregator();
 
-            //_histFeed.AddDataInterval(new DateTime(2013, 3, 4, 23, 59, 50), new DateTime(2013, 3, 5, 0, 1, 0));
+            _histFeed.AddDataInterval(new DateTime(2013, 3, 4, 23, 59, 50), new DateTime(2013, 3, 5, 0, 1, 0));
             _histFeed.AddDataInterval(new DateTime(2013, 3, 5, 23, 59, 44), new DateTime(2013, 3, 6, 0, 1, 0));
-            _histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 50), new DateTime(2013, 3, 7, 0, 1, 0));
+            //_histFeed.AddDataInterval(new DateTime(2013, 3, 6, 23, 59, 50), new DateTime(2013, 3, 7, 0, 1, 0));
             //_histFeed.AddDataInterval(new DateTime(2013, 5, 15, 23, 59, 59), new DateTime(2013, 5, 18, 0, 0, 0));
             //_histFeed.AddDataInterval(new DateTime(2013, 5, 5, 23, 59, 59), new DateTime(2013, 3, 6, 0, 0, 10));
 
@@ -41,10 +41,10 @@ namespace BarFactoryBloombergTest
             //_markets.AddSecurity(NKH3);
             //NKH3.AddReferenceToMarkets(_markets);
 
-            //var NOH3 = new DataFactory(new Security("NOH3 Index", 17, Security.SecurityType.IndexFuture));
-            //_histFeed.AddSecurity(NOH3);
-            //_markets.AddSecurity(NOH3);
-            //NOH3.AddReferenceToMarkets(_markets);
+            var NOH3 = new DataFactory(new Security("NOH3 Index", 17, Security.SecurityType.IndexFuture));
+            _histFeed.AddSecurity(NOH3);
+            _markets.AddSecurity(NOH3);
+            NOH3.AddReferenceToMarkets(_markets);
 
             var NIH3 = new DataFactory(new Security("NIH3 Index", 21, Security.SecurityType.IndexFuture));
             _histFeed.AddSecurity(NIH3);
@@ -76,7 +76,7 @@ namespace BarFactoryBloombergTest
             Console.WriteLine("Playback time {0} seconds", time.Seconds.ToString());
 
             const string filePath = @"C:\Users\Andre\Documents\BBDataSource\Market Aggregator OutPut\";
-            _markets.BatchWriteOutData(MarketAggregator.OutPutMode.FlatFile, filePath, 11);
+            _markets.BatchWriteOutData(MarketAggregator.OutPutType.FlatFile, MarketAggregator.OutPutMktMode.BothMkts, filePath, 11);
 
 
 
