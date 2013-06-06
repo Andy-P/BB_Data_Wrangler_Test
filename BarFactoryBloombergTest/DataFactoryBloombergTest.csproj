@@ -63,9 +63,8 @@
     <Reference Include="BlbgTickDataWrangler">
       <HintPath>..\BlbgTickDataWrangler\bin\Debug\BlbgTickDataWrangler.dll</HintPath>
     </Reference>
-    <Reference Include="BloombergRTDataHandler, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\BloombergRTDataHandler\BloombergRTDataHandler\bin\Debug\BloombergRTDataHandler.dll</HintPath>
+    <Reference Include="BloombergDataHandler">
+      <HintPath>..\..\BloombergDataHandler\BloombergDataHandler\bin\Debug\BloombergDataHandler.dll</HintPath>
     </Reference>
     <Reference Include="HistoricalDataHandler">
       <HintPath>..\HistoricalDataHandler\bin\Debug\HistoricalDataHandler.dll</HintPath>
