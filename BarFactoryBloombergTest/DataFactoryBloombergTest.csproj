@@ -60,21 +60,15 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BlbgTickDataWrangler">
+      <HintPath>..\BlbgTickDataWrangler\bin\Debug\BlbgTickDataWrangler.dll</HintPath>
+    </Reference>
     <Reference Include="BloombergRTDataHandler, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\BloombergRTDataHandler\BloombergRTDataHandler\bin\Debug\BloombergRTDataHandler.dll</HintPath>
     </Reference>
-    <Reference Include="DataFactory">
-      <HintPath>..\DataFactory\bin\Debug\DataFactory.dll</HintPath>
-    </Reference>
     <Reference Include="HistoricalDataHandler">
       <HintPath>..\HistoricalDataHandler\bin\Debug\HistoricalDataHandler.dll</HintPath>
-    </Reference>
-    <Reference Include="MarketAggregator">
-      <HintPath>..\MarketAggregator\bin\Debug\MarketAggregator.dll</HintPath>
-    </Reference>
-    <Reference Include="Security">
-      <HintPath>..\Security\bin\Debug\Security.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -86,8 +80,8 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
-    <Reference Include="TickData">
-      <HintPath>..\TickData\bin\Debug\TickData.dll</HintPath>
+    <Reference Include="WranglerDataStructures">
+      <HintPath>..\WranglerDataStructures\bin\Debug\WranglerDataStructures.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

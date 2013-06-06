@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("BloombergHistoricalDataHandler")]
+[assembly: AssemblyTitle("WranglerDataStructures")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("BloombergHistoricalDataHandler")]
+[assembly: AssemblyProduct("WranglerDataStructures")]
 [assembly: AssemblyCopyright("Copyright ©  2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("f0bec754-0c0a-4792-8268-d281a23d6d97")]
+[assembly: Guid("07fc2418-1f49-4f3f-ab57-e0f82ae79bca")]
 
 // Version information for an assembly consists of the following four values:
 //

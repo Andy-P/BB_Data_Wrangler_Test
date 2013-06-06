@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using DataWrangler;
 
 
-namespace BarFactoryBloombergTest
+namespace DataFactoryBloombergTest
 {
     public partial class Main : Form
     {
@@ -34,7 +34,7 @@ namespace BarFactoryBloombergTest
             //_histFeed.AddDataInterval(new DateTime(2013, 3, 5, 23, 59, 44), new DateTime(2013, 3, 6, 0, 1, 0));
 
             //var NKH3 = new DataFactory(new Security("NKM3 Index", 13, Security.SecurityType.IndexFuture));
-            ////_histFeed.AddSecurity(NKH3);
+            //_histFeed.AddSecurity(NKH3);
             //_markets.AddSecurity(NKH3);
             //NKH3.AddReferenceToMarkets(_markets);
 
@@ -47,7 +47,6 @@ namespace BarFactoryBloombergTest
             //_histFeed.AddSecurity(NIH3);
             //_markets.AddSecurity(NIH3);
             //NIH3.AddReferenceToMarkets(_markets);
-
             //NIH3.LogEachTick = true;
 
             //var TPH3 = new DataFactory(new Security("TPH3 Index", 26, Security.SecurityType.IndexFuture));

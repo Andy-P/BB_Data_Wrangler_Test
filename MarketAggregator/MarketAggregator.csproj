@@ -33,18 +33,15 @@
     <Reference Include="DataFactory">
       <HintPath>..\DataFactory\bin\Debug\DataFactory.dll</HintPath>
     </Reference>
-    <Reference Include="MarketState">
-      <HintPath>..\MarketState\bin\Debug\MarketState.dll</HintPath>
-    </Reference>
-    <Reference Include="Security">
-      <HintPath>..\Security\bin\Debug\Security.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="WranglerDataStructures">
+      <HintPath>..\WranglerDataStructures\bin\Debug\WranglerDataStructures.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MarketAggregator.cs" />

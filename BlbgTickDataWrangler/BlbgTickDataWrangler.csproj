@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{64BC7D1B-88A7-449E-865C-CCAFCF60A486}</ProjectGuid>
+    <ProjectGuid>{D09A9FA0-D3A9-4EEC-81B4-D0AA96928E46}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BloombergHistoricalDataHandler</RootNamespace>
-    <AssemblyName>BloombergHistoricalDataHandler</AssemblyName>
+    <RootNamespace>BlbgTickDataWrangler</RootNamespace>
+    <AssemblyName>BlbgTickDataWrangler</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -30,26 +30,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Bloomberglp.Blpapi, Version=3.5.1.1, Culture=neutral, PublicKeyToken=ec3efa8c033c2bc5, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\blp\API\APIv3\DotnetAPI\v3.5.1.1\lib\Bloomberglp.Blpapi.dll</HintPath>
-    </Reference>
-    <Reference Include="DataFactory">
-      <HintPath>..\DataFactory\bin\Debug\DataFactory.dll</HintPath>
+    <Reference Include="BloombergRTDataHandler">
+      <HintPath>..\..\BloombergRTDataHandler\BloombergRTDataHandler\bin\Debug\BloombergRTDataHandler.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="TickData">
-      <HintPath>..\TickData\bin\Debug\TickData.dll</HintPath>
+    <Reference Include="WranglerDataStructures">
+      <HintPath>..\WranglerDataStructures\bin\Debug\WranglerDataStructures.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BloombergHistoricalDataProvider.cs" />
+    <Compile Include="DataFactory.cs" />
+    <Compile Include="MarketAggregator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

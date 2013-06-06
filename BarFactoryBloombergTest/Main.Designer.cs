@@ -1,6 +1,6 @@
 ﻿using DataWrangler;
 
-namespace BarFactoryBloombergTest
+namespace DataFactoryBloombergTest
 {
     partial class Main
     {
