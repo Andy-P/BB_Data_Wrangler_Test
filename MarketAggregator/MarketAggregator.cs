@@ -186,10 +186,10 @@ namespace DataWrangler
                         switch (mktMode)
                         {
                             case OutPutMktMode.SeperateMkts:
-                                mktOutPut.setFilePath(dateStr);
+                                mktOutPut.SetFilePath(dateStr);
                                 break;
                             case OutPutMktMode.BothMkts:
-                                mktOutPut.setFilePath(dateStr);
+                                mktOutPut.SetFilePath(dateStr);
                                 fileName.Append("All_Mkts_");
                                 break;
                             case OutPutMktMode.AggregatedMkts:
@@ -265,7 +265,7 @@ namespace DataWrangler
             public string header;
             public List<string> dataCache = new List<string>();
 
-            public void setFilePath(string fileTimeStamp)
+            public void SetFilePath(string fileTimeStamp)
             {
                 filePath.Clear();
                 filePath.Append(basePath);

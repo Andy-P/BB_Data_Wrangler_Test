@@ -1,5 +1,4 @@
-﻿using System;
-
+﻿
 namespace DataWrangler
 {
     // Data container for static Security data (only one per security)

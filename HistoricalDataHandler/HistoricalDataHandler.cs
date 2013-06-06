@@ -48,7 +48,7 @@ namespace DataWrangler
 
         public void AddSecurity(DataFactory dataFactoryObject)
         {
-            _securities.Add(dataFactoryObject.Security, dataFactoryObject);
+            _securities.Add(dataFactoryObject.SecurityName, dataFactoryObject);
         }
 
         public void AddDataInterval(DateTime start, DateTime end)
@@ -93,7 +93,7 @@ namespace DataWrangler
 
         private void ParseDataTable(DataFactory factory, DataTable dt)
         {
-            Console.WriteLine("Parsing {0} DataTable({1} rows)", factory.Security, dt.Rows.Count.ToString());
+            Console.WriteLine("Parsing {0} DataTable({1} rows)", factory.SecurityName, dt.Rows.Count.ToString());
 
             if (!_mktSummaryEvents.ContainsKey(factory))
                 _mktSummaryEvents.Add(factory, new MktSummaryEvent {Complete = false});

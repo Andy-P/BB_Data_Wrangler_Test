@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Data;
 using DataFeed = DataWrangler.BloombergRTDataProvider;
 
 namespace DataWrangler
 {
     public class DataFactory
     {
-        private readonly string _security = String.Empty;
+        //private readonly string _securityName = String.Empty;
         private readonly Security _securityObj;
         private MarketAggregator _markets;
 
         // read only properties
-        public string Security { get { return _security; } }
+        public string SecurityName { get; private set; } 
         public uint SecurityId { get; private set; }
         public Security SecurityObj { get { return _securityObj; } }
         public DateTime CurrentIntervalDt
@@ -28,7 +27,6 @@ namespace DataWrangler
             }
         }
         public MarketState CurrentInterval { get { return GetLatestState(); } }
-        public DataRow CurrentBarDataRow { get { return GetCurrentBarAsDataRow(); } }
         public bool MktInitialized { get { return _mktInitialized; } }
 
         bool _mktInitialized;
@@ -47,7 +45,7 @@ namespace DataWrangler
         public DataFactory(Security security)
         {
             _securityObj = security;
-            _security = security.Name;
+            SecurityName = security.Name;
             SecurityId = security.Id;
         }
 
@@ -56,7 +54,7 @@ namespace DataWrangler
             _blbgFeed = dataFeed;
             _blbgFeed.BBRTDUpdate += RTDataHandler;
         }
-
+        
         public void AddReferenceToMarkets(MarketAggregator markets)
         {
             _markets = markets;
@@ -289,14 +287,6 @@ namespace DataWrangler
             return _marketData[timestamp];
         }
 
-
-        private static DataRow GetCurrentBarAsDataRow()
-        {
-            var dataTable = new DataTable();
-            DataRow barAsDataRow = dataTable.NewRow();
-
-            return barAsDataRow;
-        }
 
     }
 }

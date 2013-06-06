@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QRDataSource", "..\QRDataSo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoricalDataHandler", "HistoricalDataHandler\HistoricalDataHandler.csproj", "{7831CECB-889B-4EFE-80E5-6D3D0AB36804}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BloombergHistoricalDataHandler", "BloombergHistoricalDataHandler\BloombergHistoricalDataHandler.csproj", "{64BC7D1B-88A7-449E-865C-CCAFCF60A486}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,10 @@ Global
 		{7831CECB-889B-4EFE-80E5-6D3D0AB36804}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7831CECB-889B-4EFE-80E5-6D3D0AB36804}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7831CECB-889B-4EFE-80E5-6D3D0AB36804}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64BC7D1B-88A7-449E-865C-CCAFCF60A486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64BC7D1B-88A7-449E-865C-CCAFCF60A486}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64BC7D1B-88A7-449E-865C-CCAFCF60A486}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64BC7D1B-88A7-449E-865C-CCAFCF60A486}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
